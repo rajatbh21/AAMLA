@@ -7,9 +7,11 @@ This part of the code is for MeZO experiments on large autoregressive language m
 
 ~~Please install the latest versions of PyTorch (`pytorch` following [https://pytorch.org](https://pytorch.org)), Transformers (`transformers`), and Accelerate (`accelerate`). This code is tested on `torch==2.1.0.dev20230514+cu118`, `transformers==4.28.1`, and `accelerate==0.17.1` with Python 3.9.7, but should work with older/later versions of these packages too.~~
 ```
-# cuda 11.7
+# cuda 11.8
 conda create -n mezo python=3.9
 conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+# If you have problems installing conda
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 
 # original : pip install transformers==4.28.1 accelerate==0.17.1
 # For more models
