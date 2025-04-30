@@ -44,11 +44,11 @@ case $TASK in
         ;;
     RTL)
         TASK_ARGS="--train_as_classification False"
-        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.9 --max_length 2048 --max_new_tokens 1024"
+        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.2 --max_length 2048 --max_new_tokens 1024"
         ;;
     HaVen)
         TASK_ARGS="--train_as_classification False"
-        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.9 --max_length 2048 --max_new_tokens 1024"
+        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.2 --max_length 2048 --max_new_tokens 1024"
         ;;
 esac
 
