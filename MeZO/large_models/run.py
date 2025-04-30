@@ -80,7 +80,7 @@ class OurArguments(TrainingArguments):
     lora: bool = False # whether to use LoRA
     lora_alpha: int = 16 # alpha in LoRA
     lora_r: int = 8 # r in LoRA
-
+    
     # DoRA
     dora: bool = False
     dora_alpha: int = 16
@@ -485,64 +485,71 @@ class Framework:
         if self.args.resume_from_checkpoint is not None:
             last_checkpoint = self.args.resume_from_checkpoint
 
-        ########################### LLMem AREA ###########################
-        if self.args.run_llmem: 
+########################### LLMem AREA ###########################
+        if self.args.run_llmem:
             print("Running LLMEM")
             if not dist.is_initialized():
                 dist.init_process_group(backend='nccl', init_method='env://')
             world_size = dist.get_world_size()
 
-            nvmlInit()
-            h = nvmlDeviceGetHandleByIndex(0)
-            info = nvmlDeviceGetMemoryInfo(h)
-            total_nvml = int(info.total / (1024 * 1024))
-            used_nvml = int(info.used / (1024 * 1024))
-            print('[0]Total nvml GPU mem: {}'.format(total_nvml))
-            print('[0]Used nvml GPU mem: {}'.format(used_nvml))
-            cuda_context_mem = used_nvml - GPUtil.getGPUs()[dist.get_rank()].memoryUsed
-            framework_initial_mem = GPUtil.getGPUs()[dist.get_rank()].memoryUsed
-            print('[0]Used GPUtil GPU mem: {}'.format(framework_initial_mem)) 
+            torch.cuda.reset_peak_memory_stats()
+            torch.cuda.synchronize()
+            total_nvml = torch.cuda.get_device_properties(0).total_memory // (1024**2)
+            reserved = torch.cuda.memory_reserved() // (1024**2)
+            allocated = torch.cuda.memory_allocated() // (1024**2)
+            cuda_context_mem = reserved - allocated
 
-            print(f"[{dist.get_rank()}] cuda_context_mem: {cuda_context_mem} MB")
-            print(f"[{dist.get_rank()}] framework_initial_mem: {framework_initial_mem} MB")
+            print(f"[0] Total GPU mem (MB): {total_nvml}")
+            print(f"[0] Reserved/Allocated diff (MB): {cuda_context_mem}")
 
-            torch.cuda.empty_cache()
+            optimizer = trainer.optimizer
 
-            self.model.to('cuda')
-            # self.model.half()
-            torch.cuda.empty_cache()
-            self.model.gradient_checkpointing_enable()
-
-            def move_to_cuda(batch, device):
-                return {k: v.to(device) for k, v in batch.items()}
-
-            llmem_dataloader = trainer.get_train_dataloader()
-            for batch in llmem_dataloader:
-                test_long_input = move_to_cuda(batch, torch.cuda.current_device())
-                break
-
-            lm_fp32 = False
-            if 'codegen' in self.args.model_name:
-                lm_fp32 = True
-            real_bs = 0
+            llmem_loader = trainer.get_train_dataloader()
+            raw_batch = next(iter(llmem_loader))
+            batch = {k: v.to('cuda') for k, v in raw_batch.items()}
             real_bs = trainer._train_batch_size
-            se = SizeEstimator(self.model, test_long_input["input_ids"][0:2], real_bs, bytes=2, bytes_input=8,
-                            gpu_n=world_size, tp=0, lm_fp32=lm_fp32, m_total=total_nvml)
-            torch.cuda.empty_cache()
-            prev_get_output = GPUtil.getGPUs()[dist.get_rank()].memoryUsed
-            se.get_output_sizes()
-            torch.cuda.empty_cache()
-            after_get_output = GPUtil.getGPUs()[dist.get_rank()].memoryUsed  
 
-            chunk_mem = GPUtil.getGPUs()[dist.get_rank()].memoryUsed + 400
-            print(chunk_mem, cuda_context_mem, after_get_output, prev_get_output)
-            m_pbase = chunk_mem + cuda_context_mem - (after_get_output - prev_get_output)
-            print('[m_pbase]: {}'.format(m_pbase))
-            esti_mem, real_bs = se.estimate_size(m_init=m_pbase)
-            print('Estimated memory: {0}, real bs: {1}'.format(esti_mem, real_bs))
-            import sys
-            sys.exit()
-        ########################### LLMem AREA ###########################
+            model_dtype_bytes = next(self.model.parameters()).element_size()
+            input_dtype_bytes = batch[next(iter(batch))].element_size()
+
+            batch_ids = batch["input_ids"][:real_bs]
+
+            se = SizeEstimator(
+                model=self.model,
+                batch=batch_ids,
+                real_bs=real_bs,
+                bytes=model_dtype_bytes,
+                bytes_input=input_dtype_bytes,
+                gpu_n=world_size,
+                tp=0,
+                lm_fp32=('codegen' in self.args.model_name),
+                m_total=total_nvml - cuda_context_mem 
+            )
+            se.optimizer = optimizer
+
+            torch.cuda.empty_cache()
+            prev_used = torch.cuda.memory_allocated() // (1024**2)
+            self.model.gradient_checkpointing_disable()
+            with torch.no_grad():
+                se.get_output_sizes()
+            self.model.gradient_checkpointing_enable()
+            torch.cuda.empty_cache()
+            after_used = torch.cuda.memory_allocated() // (1024**2)
+
+            torch.cuda.reset_peak_memory_stats()
+            self.model.eval()
+            with torch.no_grad():
+                _ = self.model(**batch)
+            extra_peak = torch.cuda.max_memory_allocated() // (1024**2)
+
+            chunk_mem = torch.cuda.memory_allocated() // (1024**2)
+            m_pbase = chunk_mem + cuda_context_mem - (after_used - prev_used)
+            print(f"[m_pbase]: {m_pbase} MB")
+
+            esti_mem, found_bs = se.estimate_size(m_init=m_pbase + extra_peak)
+            print(f"Estimated peak memory: {esti_mem:.1f} MB with batch size {found_bs}")
+            import sys; sys.exit()
+########################### LLMem AREA ###########################
 
         trainer.train(resume_from_checkpoint=last_checkpoint) 
 

@@ -58,9 +58,13 @@ We plan to provide a Dockerfile and backwards compatibility mode with a prebuilt
 The evalution harness is run using make and various evaluation parameters can be set as below:
 
 ```
-mkdir -p build/
+mkdir -p build/ && cd build
 ../configure  --with-task=$task --with-model=$model --with-examples=$shots --with-samples=$samples --with-temperature=$temperature --with-top-p=$top_p
-make
+make SHELL=/bin/bash
+```
+when calculating pass@1
+```
+../configure  --with-task=code-complete-iccad2023 --with-model=local-pt --with-samples=1 --with-temperature=0.8 --with-top-p=0.95
 ```
 
 Evaluation can be sped up by providing the `-j` flag to make, such as `-j4` to run 4 worker processes.
