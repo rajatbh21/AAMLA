@@ -16,6 +16,8 @@ if [ "$MODE" == "prefix" ]; then
     EXTRA_ARGS="--prefix_tuning --num_prefix 5 --no_reparam --prefix_init_by_real_act"
 elif [ "$MODE" == "lora" ]; then
     EXTRA_ARGS="--lora"
+elif [ "$MODE" == "dora" ]; then
+    EXTRA_ARGS="--dora"
 fi
 TAG=$MODE-$EPOCH-$BS-$LR-$SEED
 

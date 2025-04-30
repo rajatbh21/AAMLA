@@ -81,6 +81,11 @@ class OurArguments(TrainingArguments):
     lora_alpha: int = 16 # alpha in LoRA
     lora_r: int = 8 # r in LoRA
 
+    # DoRA
+    dora: bool = False
+    dora_alpha: int = 16
+    dora_r : int = 8
+
     # Generation
     sampling: bool = False # whether to use sampling
     temperature: float = 1.0 # temperature for generation
@@ -221,6 +226,9 @@ class Framework:
         if self.args.lora:
             from lora import LoRA
             LoRA(model, r=self.args.lora_r, alpha=self.args.lora_alpha, float16=self.args.load_float16)
+        if self.args.dora:
+            from dora import DoRA
+            DoRA(model, r=self.args.dora_r, alpha=self.args.dora_alpha, float16=self.args.load_float16)
 
         if self.args.head_tuning:
             if model.config.model_type == "opt"  or model.config.model_type == "codegen":
