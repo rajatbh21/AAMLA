@@ -17,6 +17,7 @@ pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https
 # For more models
 pip install transformers==4.33.0 accelerate==0.20.3
 pip install datasets scikit-learn
+pip install GPUtil pynvml
 
 # if NumPy version >= 2, Downgrade
 pip install numpy==1.26.4
@@ -48,8 +49,10 @@ We also support all [HuggingFace trainer arguments](https://github.com/huggingfa
 
 We provide example scripts below for reproducing our experiments. All our examples sample 1,000 training examples, 500 validation examples, and 1,000 testing examples. For ICL, we use 32 demonstrations. For detailed hyperparameters and grid search configs, please refer to Appendix D of [our paper](https://arxiv.org/pdf/2305.17333.pdf).
 ```bash
-# MeZO(full-parameter) with HaVen
-MODEL=Salesforce/codegen-350M-multi TASK=HaVen MODE=ft BS=4 LR=2e-6 EPS=1e-3 bash mezo.sh
+# MeZO(full-parameter, LoRA, DoRA) with HaVen
+MODEL=Salesforce/codegen-2B-multi TASK=HaVen MODE=ft BS=16 LR=2e-6 EPS=1e-3 bash mezo.sh
+MODEL=Salesforce/codegen-2B-multi TASK=HaVen MODE=lora BS=16 LR=5e-6 EPS=1e-3 bash mezo.sh
+MODEL=Salesforce/codegen-2B-multi TASK=HaVen MODE=dora BS=16 LR=5e-6 EPS=1e-3 bash mezo.sh
 
 # Zero-shot
 MODEL=facebook/opt-13b TASK=SST2 bash icl.sh --num_train 0

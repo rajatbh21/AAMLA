@@ -33,22 +33,32 @@ which were used for this project:
 
 To install Python 3.11:
 ```
-$ conda create -n codex python=3.11
-$ conda activate codex
+conda create -n codex python=3.11
+conda activate codex
 ```
 
 Install [ICARUS Verilog](https://github.com/steveicarus/iverilog):
 ```
-$ git clone https://github.com/steveicarus/iverilog.git && cd iverilog \
-        && git checkout v12-branch \
-        && sh ./autoconf.sh && ./configure && make -j4\
-        && make install
+git clone https://github.com/steveicarus/iverilog.git && cd iverilog \
+      && git checkout v12-branch \
+      && sh ./autoconf.sh && ./configure && make -j4\
+      && make install
+```
+```
+sudo apt update
+sudo apt install gperf
+sudo apt install flex
 ```
 
 You will also need the following Python packages:
 
 ```
- % pip install langchain langchain-openai langchain-nvidia-ai-endpoints
+pip install langchain langchain-openai langchain-nvidia-ai-endpoints
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
+pip install transformers accelerate
+
+# if NumPy version >= 2, Downgrade
+pip install numpy==1.26.4
 ```
 
 We plan to provide a Dockerfile and backwards compatibility mode with a prebuilt jsonl soon.
