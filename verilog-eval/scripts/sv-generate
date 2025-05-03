@@ -66,7 +66,10 @@ def parse_cmdline():
   p.add_argument(       "--output",      type=str,   default="-" )
   p.add_argument(       "--task",        type=str,   default="code-complete-iccad2023" )
   p.add_argument( "prompt_filename" )
-  p.add_argument("--model_path", type=str, default="/home/kang/a_temp/MeZO/large_models/result/2HaVen-codegen-350M-multi-mezo-ft-20000-4-2e-6-1e-3-0/checkpoint-20000")
+  # p.add_argument("--model_path", type=str, default="yangyiyao/HaVen-CodeQwen")
+  # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-mezo-dora-20000-16-2e-6-1e-3-0/checkpoint-16000")
+  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-mezo-ft-20000-16-2e-6-5e-3-0/checkpoint-20000")
+  # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-dora-5-2-5e-6-0/checkpoint-15000")
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -380,22 +383,64 @@ def main():
     with open( output_prompt_filename + "_systemprompt.txt", 'w' ) as output_prompt_file:
       print( system_msg, file=output_prompt_file )
   elif model == 'local-pt':
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoTokenizer #, StoppingCriteria, StoppingCriteriaList
     model_path = opts.model_path
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     local_model = AutoModelForCausalLM.from_pretrained(model_path).cuda()
 
+    # class EndmoduleCriteria(StoppingCriteria):
+    #     def __init__(self, terminator_id):
+    #         super().__init__()
+    #         self.terminator_id = terminator_id
+    #     def __call__(self, input_ids, scores, **kwargs):
+    #         return input_ids[0, -1].item() == self.terminator_id
+
+    # stop_criteria = StoppingCriteriaList([
+    #     EndmoduleCriteria(tokenizer.convert_tokens_to_ids("endmodule"))
+    # ])
+
     def local_inference(msgs, temperature=0.8, top_p=0.95):
-      prompt_text = msgs[1].content
+      raw_prompt = msgs[1].content
+      prompt_text = f"{raw_prompt}\n"
       inputs = tokenizer(prompt_text, return_tensors="pt").to(local_model.device)
-      outputs = local_model.generate(
-          **inputs,
-          max_new_tokens=512,
-          temperature=temperature,
-          top_p=top_p,
-          do_sample=True
-      )
-      return tokenizer.decode(outputs[0], skip_special_tokens=True)
+      if temperature > 0:
+        outputs = local_model.generate(
+            **inputs,
+            max_new_tokens=1024,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=True,
+            # repetition_penalty=1.1,
+            # no_repeat_ngram_size=3,
+            # eos_token_id=tokenizer.eos_token_id,
+            # pad_token_id=tokenizer.eos_token_id,
+            # stopping_criteria=stop_criteria,
+        )
+      else:
+        outputs = local_model.generate(
+            **inputs,
+            max_new_tokens=1024,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=False,
+            # repetition_penalty=1.1,
+            # no_repeat_ngram_size=3,
+            # eos_token_id=tokenizer.eos_token_id,
+            # pad_token_id=tokenizer.eos_token_id,
+            # stopping_criteria=stop_criteria,
+        )
+      # return tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:].cpu().squeeze(), skip_special_tokens=True)
+      # return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+      s_full = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:].cpu().squeeze(), skip_special_tokens=True)
+      if "endmodule" in s_full:
+          resp = s_full.split("endmodule", 1)[0] + "\nendmodule"
+      else:
+          resp = s_full
+      return resp
+
+      # text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+      # return (text.rsplit("endmodule")[0] + "endmodule") if "endmodule" in text else text
   else:
     # should never reach here
     return

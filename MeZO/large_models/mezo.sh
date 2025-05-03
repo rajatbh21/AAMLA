@@ -11,6 +11,7 @@ DEV=${DEV:-500}
 EVAL=${EVAL:-1000}
 STEPS=${STEPS:-20000}
 EVAL_STEPS=${EVAL_STEPS:-4000}
+GPU=${GPU:-0}
 
 MODE=${MODE:-ft}
 EXTRA_ARGS=""
@@ -21,7 +22,6 @@ elif [ "$MODE" == "lora" ]; then
 elif [ "$MODE" == "dora" ]; then
     EXTRA_ARGS="--dora"
 fi
-TAG=mezo-$MODE-$STEPS-$BS-$LR-$EPS-$SEED
 
 TASK_ARGS=""
 case $TASK in
@@ -47,11 +47,14 @@ case $TASK in
         EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.2 --max_length 2048 --max_new_tokens 1024"
         ;;
     HaVen)
+        DEV=160
+        TRAIN=56240
         TASK_ARGS="--train_as_classification False"
-        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.2 --max_length 2048 --max_new_tokens 1024"
+        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.8 --top_p 0.8 --max_length 2048 --max_new_tokens 1024"
         ;;
 esac
 
+TAG=mezo-$MODE-$STEPS-$BS-$LR-$EPS-$SEED
 LLMEM=${LLMEM:-False}
 
 if [ "$LLMEM" == "True" ]; then
@@ -69,7 +72,7 @@ echo "TRAIN/EVAL STEPS: $STEPS/$EVAL_STEPS"
 echo "MODE: $MODE"
 echo "Extra args: $EXTRA_ARGS $TASK_ARGS"
 
-python -m torch.distributed.run --nproc_per_node 1 run.py \
+CUDA_VISIBLE_DEVICES=$GPU python -m torch.distributed.run --nproc_per_node 1 run.py \
     --model_name $MODEL \
     --task_name $TASK \
     --output_dir result/$TASK-${MODEL_NAME}-$TAG --tag $TAG --train_set_seed $SEED --num_train $TRAIN --num_dev $DEV --num_eval $EVAL --logging_steps 10 \

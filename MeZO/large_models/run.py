@@ -91,7 +91,7 @@ class OurArguments(TrainingArguments):
     temperature: float = 1.0 # temperature for generation
     num_beams: int = 1 # number of beams for generation
     top_k: int = None # top-k for generation
-    top_p: float = 0.95 # top-p for generation
+    top_p: float = 0.8 # top-p for generation
     max_new_tokens: int = 50 # max number of new tokens to generate
     eos_token: str = "\n" # end of sentence token
 

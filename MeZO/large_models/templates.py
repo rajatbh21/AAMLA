@@ -55,19 +55,20 @@ class RTLTemplate:
 
 class HaVenTemplate:
     def __init__(self):
+        self.description = "// Implement the Verilog module based on the following description. Assume that signals are positive clock/clk triggered unless otherwise stated.\n\n"
         pass
 
     def encode(self, sample):
         # Returns the prompt for the model (instruction text)
         instruction = sample.data["instruction"].strip()
         # You are an expert Verilog engineer.\n
-        return f"Instruction:\n{instruction}\nVerilog code:\n"
+        return f"{instruction}\n"
 
     def verbalize(self, sample, candidate=None):
         # Returns the correct answer (Verilog code), candidate is ignored
         instruction = sample.data["instruction"].strip()
         response = sample.data["response"].strip()
-        return f"Instruction:\n{instruction}\nVerilog Code:\n{response}"
+        return f"{instruction}\n{response}"
 
     def encode_sfc(self, sample):
         # Returns the suffix used in self-fewshot response (optional)
