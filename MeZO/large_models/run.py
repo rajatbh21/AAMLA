@@ -123,6 +123,9 @@ class OurArguments(TrainingArguments):
     #LLMEM config
     run_llmem: bool = False
 
+    # deepspeed
+    deepspeed: str = None
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser = HfArgumentParser(OurArguments)
