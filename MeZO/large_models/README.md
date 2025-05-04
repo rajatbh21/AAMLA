@@ -16,8 +16,11 @@ pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https
 # original : pip install transformers==4.28.1 accelerate==0.17.1
 # For more models
 pip install transformers==4.33.0 accelerate==0.20.3
-pip install datasets scikit-learn
-pip install GPUtil pynvml
+pip install datasets scikit-learn deepspeed GPUtil pynvml
+pip install mpi4py
+# if you can't install mpi4py
+conda install -c conda-forge mpi4py
+
 
 # if NumPy version >= 2, Downgrade
 pip install numpy==1.26.4
