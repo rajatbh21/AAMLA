@@ -68,7 +68,7 @@ def parse_cmdline():
   p.add_argument( "prompt_filename" )
   # p.add_argument("--model_path", type=str, default="yangyiyao/HaVen-CodeQwen")
   # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-mezo-dora-20000-16-2e-6-1e-3-0/checkpoint-16000")
-  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-mezo-ft-20000-16-2e-6-5e-3-0/checkpoint-20000")
+  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/LLaMA-Factory/saves/codellama-7b/dora/sft/checkpoint-5874")
   # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-dora-5-2-5e-6-0/checkpoint-15000")
 
   opts = p.parse_args()
@@ -384,9 +384,18 @@ def main():
       print( system_msg, file=output_prompt_file )
   elif model == 'local-pt':
     from transformers import AutoModelForCausalLM, AutoTokenizer #, StoppingCriteria, StoppingCriteriaList
+    from peft import PeftModel, PeftConfig
+    import torch
     model_path = opts.model_path
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    local_model = AutoModelForCausalLM.from_pretrained(model_path).cuda()
+    # tokenizer = AutoTokenizer.from_pretrained(model_path)
+    # local_model = AutoModelForCausalLM.from_pretrained(model_path).cuda()
+    base_model_name = "codellama/CodeLlama-7b-Instruct-hf"
+    local_model = AutoModelForCausalLM.from_pretrained(base_model_name, torch_dtype=torch.bfloat16)
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    local_model = PeftModel.from_pretrained(local_model, model_path)
+    local_model = local_model.to(torch.bfloat16)
+    local_model = local_model.merge_and_unload()
+    local_model = local_model.cuda()
 
     # class EndmoduleCriteria(StoppingCriteria):
     #     def __init__(self, terminator_id):
