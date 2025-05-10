@@ -50,7 +50,7 @@ case $TASK in
         DEV=160
         TRAIN=56240
         TASK_ARGS="--train_as_classification False"
-        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --sampling True --temperature 0.8 --top_p 0.8 --max_length 2048 --max_new_tokens 1024"
+        EXTRA_ARGS="$EXTRA_ARGS --eos_token <\s> --sampling False --temperature 0 --top_p 1 --max_length 2048 --max_new_tokens 1024"
         ;;
 esac
 

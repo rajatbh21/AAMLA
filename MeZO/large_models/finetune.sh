@@ -61,7 +61,7 @@ case $TASK in
         TRAIN=56240
         EPOCH=1
         TASK_ARGS="--train_as_classification False"
-        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --deepspeed ds_config.json --fp16 True --sampling True --temperature 0.7 --top_p 0.9 --max_length 2048 --max_new_tokens 1024"
+        EXTRA_ARGS="$EXTRA_ARGS --eos_token <|endofcode|> --deepspeed ds_config.json --fp16 True --load_float16 True --sampling True --temperature 0.7 --top_p 0.9 --max_length 2048 --max_new_tokens 1024"
         ;;
 esac
 

@@ -168,7 +168,7 @@ class HaVenDataset(Dataset):
     
     # for generative tasks, candidates are []
     def build_sample(self, example, idx):
-        answers = example['output'] + "\n<|endofcode|>"
+        answers = example['output'] + "\n<\s>"
         assert len(answers) > 0
         return Sample(
             id=idx,
