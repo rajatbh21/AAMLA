@@ -1,3 +1,10 @@
+# Running Our Models
+```
+conda activate llamaf
+llamafactory-cli train examples/train_lora/codellama_lora_sft.yaml.yaml
+llamafactory-cli train examples/train_dora/codellama_dora_sft.yaml
+
+```
 ![# LLaMA Factory](assets/logo.png)
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/hiyouga/LLaMA-Factory?style=social)](https://github.com/hiyouga/LLaMA-Factory/stargazers)

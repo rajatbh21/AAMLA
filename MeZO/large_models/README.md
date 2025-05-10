@@ -1,3 +1,9 @@
+# Running Our Models
+```
+conda activate mezo
+MODEL=codellama/CodeLlama-7b-Instruct-hf STEPS=21090 TASK=HaVen MODE=ft BS=8 LR=5e-5 EPS=1e-3 bash mezo.sh
+```
+
 # MeZO on Large Autoregressive Language Models
 
 This part of the code is for MeZO experiments on large autoregressive language models. It includes training autoregressive LMs with linear probing, head tuning, full fine-tuning, parameter-efficient fine-tuning (PEFT), and MeZO. It also covers zero-shot and in-context learning (ICL) evaluation. It is tested on OPT-13B, 30B, and 66B but should be able to extend to other sizes and other autoregressive LMs.

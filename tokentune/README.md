@@ -1,3 +1,29 @@
+# Running Our Models
+```
+conda activate tokentune
+CUDA_VISIBLE_DEVICES=0 python -u ./tokentune/finetune.py \
+    --model_name_or_path codellama/CodeLlama-7b-Instruct-hf \
+    --dataset_name_or_path yangyiyao/HaVen-KL-Dataset \
+    --prompt_template_name_or_path ./tokentune/haven_template.json \
+    --global_batch_size 32 \
+    --gradient_accumulation_steps 32 \
+    --num_epochs 3 \
+    --num_workers 4 \
+    --learning_rate 5e-5 \
+    --weight_decay 0.05 \
+    --warmup_steps 15 \
+    --lr_scheduler_type cosine \
+    --model_save_path ./saves/ \
+    --save_steps 1000 \
+    --save_total_limit 2 \
+    --max_length 2048 \
+    --tokentune \
+    --lora \
+    --bf16 \
+    --prefix_length 0.1
+```
+
+
 # TokenTune: Memory-Efficient Fine-Tuning of Transformers via Token Selection
 
 <img src="assets/model.png">
