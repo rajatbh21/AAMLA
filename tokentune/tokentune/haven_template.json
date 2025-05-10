@@ -1,0 +1,6 @@
+{
+    "description": "Template for HaVen dataset.",
+    "prompt_input": "{instruction}\n",
+    "prompt_no_input": "{instruction}\n",
+    "response_split": "<\\s>"    
+}
