@@ -67,9 +67,9 @@ def parse_cmdline():
   p.add_argument(       "--task",        type=str,   default="code-complete-iccad2023" )
   p.add_argument( "prompt_filename" )
   # p.add_argument("--model_path", type=str, default="yangyiyao/HaVen-CodeQwen")
-  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-CodeLlama-7b-Instruct-hf-mezo-ft-21090-8-1e-6-1e-3-0/checkpoint-20000")
+  # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-CodeLlama-7b-Instruct-hf-mezo-ft-21090-8-1e-6-1e-3-0/checkpoint-20000")
   # p.add_argument("--model_path", type=str, default="/media/Data_3/hyunwooo/rajat-model/codellama-7b/dora/sft/checkpoint-5874")
-  # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-codegen-2B-multi-dora-5-2-5e-6-0/checkpoint-15000")
+  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/tokentune/saves/codellama-CodeLlama-7b-Instruct-hf-yangyiyao-HaVen-KL-Dataset-lora-tokentune-0.1/merged")
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -397,8 +397,9 @@ def main():
     # local_model = local_model.merge_and_unload()
     # local_model = local_model.cuda()
     ## mezo
-    local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16).cuda()
-    # tokenizer = AutoTokenizer.from_pretrained(model_path)
+    # local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16).cuda()
+    ## tokentune
+    local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16).cuda()
 
     # class EndmoduleCriteria(StoppingCriteria):
     #     def __init__(self, terminator_id):

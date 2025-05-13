@@ -142,7 +142,7 @@ cython_debug/
 # *.sh
 .venv
 .vscode
-data
+# data
 log*
 runs
 result
@@ -163,3 +163,5 @@ llm_eval/data
 
 build*/
 autom4te.cache/
+draw/
+saves
