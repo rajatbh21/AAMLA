@@ -1,5 +1,6 @@
 from datasets import load_dataset
 import json
+import os
 
 dataset = load_dataset("yangyiyao/HaVen-KL-Dataset", split="train")
 
@@ -11,8 +12,12 @@ for item in dataset:
         "output": item["output"]
     })
 
-output_path = "data/haven_kl_data.json"
-with open(output_path, "w", encoding="utf-8") as f:
+save_path = "data/"
+file_name = "haven_kl_data.json"
+full_path = os.path.join(save_path, file_name)
+os.makedirs(save_path, exist_ok=True)
+
+with open(full_path, "w", encoding="utf-8") as f:
     json.dump(processed_data, f, ensure_ascii=False, indent=2)
 
-print(f"Saved to {output_path}")
+print(f"Saved to {full_path}")
