@@ -158,7 +158,7 @@ class HaVenDataset(Dataset):
 
         # 90% train, 10% valid split
         n_total = len(dataset)
-        n_valid = int(n_total * 0.1)
+        n_valid = int(n_total * 0.0001)
         train_examples = dataset.select(range(n_total - n_valid))
         valid_examples = dataset.select(range(n_total - n_valid, n_total))
 

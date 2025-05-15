@@ -48,7 +48,9 @@ case $TASK in
         ;;
     HaVen)
         DEV=160
-        TRAIN=56240
+        EVAL=0
+        TRAIN=62672
+        STEPS=23502
         TASK_ARGS="--train_as_classification False"
         EXTRA_ARGS="$EXTRA_ARGS --eos_token <\s> --sampling False --temperature 0 --top_p 1 --max_length 2048 --max_new_tokens 1024"
         ;;

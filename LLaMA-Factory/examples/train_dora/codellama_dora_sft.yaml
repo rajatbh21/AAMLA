@@ -40,3 +40,4 @@ bf16: true
 ddp_timeout: 180000000
 resume_from_checkpoint: null
 # optimizer: adamw_torch
+RECORD_VRAM=1
