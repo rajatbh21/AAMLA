@@ -1,36 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
-set -x   
+set -x
 
-# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [lora]
-if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [lora]"
+# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [none|mezo|tokentune] [none|lora|dora] [true|false]
+if [ "$#" -lt 3 ] || [ "$#" -gt 6 ]; then
+  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [none|mezo|tokentune] [none|lora|dora] [true|false]"
   exit 1
 fi
 
 MODEL_NAME=$1
 BATCH_SIZE=$2
 SEQ_LEN=$3
-LORA_FLAG=${4:-}
+METHOD=${4:-none}
+PEFT=${5:-none}
+GCKP_FLAG=${6:-false}
 
 echo "[$(date)] run_llmem.sh start"
-echo "MODEL_NAME   = $MODEL_NAME"
-echo "BATCH_SIZE   = $BATCH_SIZE"
-echo "SEQ_LEN      = $SEQ_LEN"
-echo "LORA_FLAG    = ${LORA_FLAG:-<off>}"
-echo "CUDA_VISIBLE_DEVICES = ${CUDA_VISIBLE_DEVICES:-<unset>}"
-which torchrun || echo "torchrun not found in PATH"
-torchrun --version || echo "failed to get torchrun version"
+echo "MODEL_NAME = $MODEL_NAME"
+echo "BATCH_SIZE = $BATCH_SIZE"
+echo "SEQ_LEN    = $SEQ_LEN"
+echo "METHOD     = $METHOD"
+echo "PEFT       = $PEFT"
+echo "GCKP       = $GCKP_FLAG"
 
-if [ "$LORA_FLAG" = "lora" ]; then
-  EXTRA_OPTS="--lora --lora_rank 8 --lora_target all"
-else
-  EXTRA_OPTS=""
+EXTRA_OPTS="--method ${METHOD}"
+
+# Add PEFT options if needed
+if [ "$PEFT" = "lora" ]; then
+  EXTRA_OPTS+=" --peft lora --lora_rank 8 --lora_target all"
+elif [ "$PEFT" = "dora" ]; then
+  EXTRA_OPTS+=" --peft dora --lora_rank 8 --lora_target all"
+fi
+
+# Add method-specific options
+if [ "$METHOD" = "tokentune" ]; then
+  EXTRA_OPTS+=" --token_ratio 0.1"
+fi
+
+# Add gradient checkpointing if enabled
+if [ "$GCKP_FLAG" = "true" ]; then
+  EXTRA_OPTS+=" --gradient_checkpointing True"
 fi
 
 torchrun --nproc_per_node=1 \
   run.py \
-    --model    "${MODEL_NAME}" \
-    --batch    "${BATCH_SIZE}" \
-    --seq_len  "${SEQ_LEN}" \
+    --model   "${MODEL_NAME}" \
+    --batch   "${BATCH_SIZE}" \
+    --seq_len "${SEQ_LEN}" \
     ${EXTRA_OPTS}

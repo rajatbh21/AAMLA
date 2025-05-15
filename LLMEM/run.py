@@ -8,21 +8,48 @@ from transformers import AutoModelForCausalLM, AutoConfig
 from peft import LoraConfig, get_peft_model, TaskType
 
 def main():
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, required=True, help="model path on huggingface")
-    parser.add_argument('--batch', type=int, required=True, help="batch size")
-    parser.add_argument('--seq_len', type=int, required=True)
+    parser.add_argument('--model',   type=str, required=True, help="Model path on HuggingFace")
+    parser.add_argument('--batch',   type=int, required=True, help="Batch size")
+    parser.add_argument('--seq_len', type=int, required=True, help="Sequence length")
 
-    parser.add_argument('--lora', action='store_true')
-    parser.add_argument('--lora_rank', type=int, default=8)
-    parser.add_argument('--lora_target', nargs='+', default=['all'],
-                        help="LoRA target modules (default: ['all'])")
+    # Separate method and PEFT
+    parser.add_argument(
+        '--method',
+        choices=['none', 'mezo', 'tokentune'],
+        default='none',
+        help="Method to apply: 'none', 'mezo', or 'tokentune'"
+    )
+
+    parser.add_argument(
+        '--peft',
+        choices=['none', 'lora', 'dora'],
+        default='none',
+        help="PEFT method: 'none', 'lora', or 'dora'"
+    )
+
+    # PEFT-related arguments
+    parser.add_argument('--lora_rank', type=int, default=8, help="LoRA rank")
+    parser.add_argument(
+        '--lora_target',
+        nargs='+',
+        default=['q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'gate_proj', 'down_proj'],
+        help="LoRA target modules"
+    )
+
+    parser.add_argument('--token_ratio', type=float, default=0.1, help="TokenTune token ratio")
+
+    parser.add_argument('--gradient_checkpointing', type=bool, default=True, help="Enable gradient checkpointing")
+
+    if not dist.is_initialized():
+        dist.init_process_group(backend='nccl', init_method='env://')
+    world_size = dist.get_world_size()
     
     args = parser.parse_args()
     model_name = args.model
     real_bs = args.batch
     seq_len = args.seq_len
+    gradient_checkpointing = args.gradient_checkpointing
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(torch.cuda.get_device_properties(0).name)
@@ -31,10 +58,9 @@ def main():
         model_name,
         config=config,
         torch_dtype=torch.bfloat16, # bf16
-        device_map="auto"
-    )
+    ).to(device)
 
-    if args.lora:
+    if args.peft == 'lora':
         lora_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
@@ -46,10 +72,20 @@ def main():
         model = get_peft_model(model, lora_config)
         print(f"LoRA enabled: rank={args.lora_rank}, target={args.lora_target}")
 
+    if args.peft == 'dora':
+        lora_config = LoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=False,
+            r=args.lora_rank,
+            lora_alpha=args.lora_rank * 2,
+            lora_dropout=0.05,
+            target_modules= [ 'q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'gate_proj', 'down_proj' ],
+            use_dora=True
+        )
+        model = get_peft_model(model, lora_config)
+        print(f"DoRA enabled: rank={args.lora_rank}, target={args.lora_target}")
+
     print("Running LLMEM")
-    if not dist.is_initialized():
-        dist.init_process_group(backend='nccl', init_method='env://')
-    world_size = dist.get_world_size()
 
     torch.cuda.reset_peak_memory_stats()
     torch.cuda.synchronize()
@@ -103,7 +139,11 @@ def main():
         gpu_n=world_size,
         tp=0,
         lm_fp32=True,
-        m_total=total_nvml - cuda_context_mem 
+        m_total=total_nvml - cuda_context_mem,
+        method=args.method,
+        peft=args.peft,
+        gradient_checkpointing=gradient_checkpointing,
+        token_ratio=args.token_ratio
     )
 
     torch.cuda.empty_cache()
@@ -123,7 +163,7 @@ def main():
 
     peak = torch.cuda.max_memory_allocated() // (1024**2)
     extra_peak = max(peak - after_used, 0)
-
+    print("Extra Peak: ", extra_peak)
     chunk_mem = torch.cuda.memory_allocated() // (1024**2)
     m_pbase = chunk_mem + cuda_context_mem - (after_used - prev_used)
     print(f"[m_pbase]: {m_pbase} MB")
