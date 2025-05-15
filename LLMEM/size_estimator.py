@@ -6,7 +6,7 @@ import numpy as np
 class SizeEstimator(object):
 
     def __init__(self, model, batch, real_bs, bytes=2, bytes_input=4, 
-                 gpu_n=1, tp=0, lm_fp32=True, m_total=0):
+                 gpu_n=1, tp=0, lm_fp32=True, m_total=0, method='none', peft='none', gradient_checkpointing=True, token_ratio=0.1):
         '''
         Estimates the size of PyTorch models in memory
         for a given input size
@@ -17,21 +17,25 @@ class SizeEstimator(object):
         self.bytes_input = bytes_input
         self.gpu_n = gpu_n
         self.tp = tp
-        self.base_size = 512 if 'opt' in self.model.config._name_or_path else 1024*1024*2
+        self.base_size = 512 #1024*1024*2
         self.real_bs = real_bs
         self.lm_fp32 = lm_fp32
         self.m_total = m_total
+        self.method = method
+        self.peft = peft
+        self.gradient_checkpointing = gradient_checkpointing
+        self.token_ratio = token_ratio
+
         self.optimizer = None
 
         self.cudnn_workspace = 0
         self.activation_bytes = 0
 
-        print(self.model)
 
     def get_output_sizes(self):
 
         self.inout_sizes = []
-        self.backward_all_gather_sizes = [] 
+        self.backward_all_gather_sizes = []
 
         hooks = []
         def hook_fn(module, inp, out):
@@ -39,9 +43,22 @@ class SizeEstimator(object):
             for t in ts:
                 self.inout_sizes.append(tuple(t.size()))
 
-        for m in self.model.modules():
-            if isinstance(m, (nn.Embedding, nn.Linear)):
-                hooks.append(m.register_forward_hook(hook_fn))
+        for name, m in self.model.named_modules():
+            if self.gradient_checkpointing:
+                if name.endswith("input_layernorm") or name.endswith("post_attention_layernorm"):
+                    hooks.append(m.register_forward_hook(hook_fn))
+                elif name.endswith("lm_head"):
+                    hooks.append(m.register_forward_hook(hook_fn))
+
+            else:
+                if self.peft in ('lora', 'dora'):
+                    if hasattr(m, 'base_layer') and isinstance(m.base_layer, nn.Linear):
+                        hooks.append(m.base_layer.register_forward_hook(hook_fn))
+                    elif isinstance(m, nn.Embedding):
+                        hooks.append(m.register_forward_hook(hook_fn))
+                else:
+                    if isinstance(m, (nn.Embedding, nn.Linear)):
+                        hooks.append(m.register_forward_hook(hook_fn))
 
         self.model.eval()
         torch.cuda.empty_cache(); torch.cuda.synchronize()
@@ -53,34 +70,36 @@ class SizeEstimator(object):
             else:
                 _ = self.model(self.batch)
 
-        for h in hooks: h.remove()
+        for h in hooks:
+            h.remove()
 
         self.inout_sizes = [np.array(sz) for sz in self.inout_sizes]
 
 
-    def collect_activation_bytes(self):
-        hooks = []
-        self.activation_bytes = 0
-        def hook_fn(module, inp, out):
-            def count(t):
-                return t.numel() * self.bytes if isinstance(t, torch.Tensor) else 0
-            if isinstance(out, torch.Tensor):
-                self.activation_bytes += count(out)
-            else:
-                for x in out:
-                    self.activation_bytes += count(x)
+    # def collect_activation_bytes(self):
+    #     hooks = []
+    #     self.activation_bytes = 0
+    #     def hook_fn(module, inp, out):
+    #         def count(t):
+    #             return t.numel() * self.bytes if isinstance(t, torch.Tensor) else 0
+    #         if isinstance(out, torch.Tensor):
+    #             self.activation_bytes += count(out)
+    #         else:
+    #             for x in out:
+    #                 self.activation_bytes += count(x)
 
-        for m in self.model.modules():
-            hooks.append(m.register_forward_hook(hook_fn))
+    #     for m in self.model.modules():
+    #         hooks.append(m.register_forward_hook(hook_fn))
 
-        self.model.eval()
-        torch.cuda.empty_cache(); torch.cuda.synchronize()
-        with torch.no_grad():
-            _ = self.model(self.batch)
+    #     self.model.eval()
+    #     torch.cuda.empty_cache(); torch.cuda.synchronize()
+    #     with torch.no_grad():
+    #         _ = self.model(self.batch)
 
-        for h in hooks: h.remove()
-        rem = self.activation_bytes % self.base_size
-        if rem: self.activation_bytes += (self.base_size - rem)
+    #     for h in hooks: h.remove()
+    #     rem = self.activation_bytes % self.base_size
+    #     if rem: self.activation_bytes += (self.base_size - rem)
+
 
     def param_bytes(self):
         params = []
@@ -109,7 +128,7 @@ class SizeEstimator(object):
                 total_bytes += 2 * b_opt
 
 
-        self.param_bytes = total_bytes
+        self.param_bytes_mem = total_bytes
 
     # def param_bytes(self):
     #     mods = list(self.model.modules())
@@ -157,7 +176,7 @@ class SizeEstimator(object):
     #             # 3. gradient momentums (fp32), gradient variances (fp32)
     #             total_bytes += 2*bytes
     #             ##########################
-    #     self.param_bytes = total_bytes
+    #     self.param_bytes_mem = total_bytes
 
 
     def calc_input_bytes(self):
@@ -179,17 +198,10 @@ class SizeEstimator(object):
             bytes = np.prod(np.array(s))*self.bytes
             if bytes % self.base_size != 0:
                 bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-            total_bytes += bytes
-
-        if self.tp:
-            for i in range(0, len(self.backward_all_gather_sizes)):
-                self.backward_all_gather_sizes[i][0] = self.real_bs
-            for i in range(0, len(self.backward_all_gather_sizes)-1):
-                s = self.backward_all_gather_sizes[i]
-                bytes = np.prod(np.array(s))*self.bytes * (self.tp - 1) / self.tp
-                if bytes % self.base_size != 0:
-                    bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-                total_backward_all_gather_bytes += bytes
+            if self.method == "tokentune":
+                total_bytes += bytes * self.token_ratio
+            else:
+                total_bytes += bytes
 
         # lm_head and loss function
         last_part = 0
@@ -275,7 +287,7 @@ class SizeEstimator(object):
             if total_backward_all_gather_bytes > 0:
                 last_part += total_backward_all_gather_bytes
 
-            total_mem += (self.param_bytes + self.input_bytes + total_bytes + last_part) / (1024**2)
+            total_mem += (self.param_bytes_mem + self.input_bytes + total_bytes + last_part) / (1024**2)
 
             # ####################################################
             # import torch.distributed as dist
@@ -300,37 +312,17 @@ class SizeEstimator(object):
     def estimate_size(self, m_init=0):
         '''Estimate model size in memory in megabytes and bytes'''
         self.m_init = m_init
-
-        # self.measure_cudnn_workspace()
-
-        self.get_output_sizes()
-        self.collect_activation_bytes()
-
-        self.m_init = m_init + (self.cudnn_workspace / 1024**2)
-
         self.param_bytes()
+        self.get_output_sizes()
+
         self.calc_input_bytes()
         self.calc_output_bytes()
 
-        cfg = getattr(self.model, "config", None)
-        if getattr(cfg, "use_cache", False):
-            seq_len   = self.batch.shape[1] if isinstance(self.batch, torch.Tensor) \
-                          else self.batch["input_ids"].shape[1]
-            n_layers  = cfg.num_hidden_layers
-            n_heads   = cfg.num_attention_heads
-            head_dim  = cfg.hidden_size // n_heads
-            kv_elems  = 2 * n_layers * self.real_bs * n_heads * seq_len * head_dim
-            kv_bytes  = kv_elems * self.bytes  # fp16
-            rem = kv_bytes % self.base_size
-            if rem: kv_bytes += (self.base_size - rem)
-            self.inout_bytes += kv_bytes
-
         if self.real_bs > 0:
-            print(self.param_bytes/(1024**2), self.inout_bytes/(1024**2), self.input_bytes/(1024**2), self.activation_bytes/(1024**2), self.m_init)
-            total = (self.param_bytes 
+            print(self.param_bytes_mem/(1024**2), self.inout_bytes/(1024**2), self.input_bytes/(1024**2), self.m_init)
+            total = (self.param_bytes_mem 
                    + self.inout_bytes 
-                   + self.input_bytes 
-                   + self.activation_bytes)            
+                   + self.input_bytes )            
             total_mb = total/(1024**2) + self.m_init
             return total_mb, self.real_bs
         else:
