@@ -125,6 +125,8 @@ class OurArguments(TrainingArguments):
 
     # deepspeed
     deepspeed: str = None
+    # for device_map=true
+    place_model_on_device: bool = False
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -185,10 +187,8 @@ class Framework:
                     self.args.model_name,
                     config=config,
                     device_map='auto',
-                    # offload_state_dict=True,
-                    # offload_folder="./offload",
                     torch_dtype=torch_dtype,
-                    max_memory={i: f'{free_in_GB-5}GB' for i in range(torch.cuda.device_count())},
+                    # max_memory={i: f'{free_in_GB-5}GB' for i in range(torch.cuda.device_count())},
                     load_in_8bit=self.args.load_int8,
                 )
             model.eval()
@@ -196,16 +196,16 @@ class Framework:
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(self.args.model_name, use_fast=False)
         
-        if self.args.task_name in ["RTL", "HaVen"]:
-            special_tokens_dict = {
-                "eos_token": "<|endofcode|>",
-                "pad_token": "<|pad|>",
-                "bos_token": "<|startofcode|>"
-            }
-            tokenizer.add_special_tokens(special_tokens_dict)
-            model.resize_token_embeddings(len(tokenizer))
-            tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids("<|pad|>")
-            tokenizer.bos_token_id = tokenizer.convert_tokens_to_ids("<|startofcode|>")
+        # if self.args.task_name in ["RTL", "HaVen"]:
+        #     special_tokens_dict = {
+        #         "eos_token": "<|endofcode|>",
+        #         "pad_token": "<|pad|>",
+        #         "bos_token": "<|startofcode|>"
+        #     }
+        #     tokenizer.add_special_tokens(special_tokens_dict)
+        #     model.resize_token_embeddings(len(tokenizer))
+        #     tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids("<|pad|>")
+        #     tokenizer.bos_token_id = tokenizer.convert_tokens_to_ids("<|startofcode|>")
 
         if "codegen" in self.args.model_name:
             tokenizer.padding_side = "left"
