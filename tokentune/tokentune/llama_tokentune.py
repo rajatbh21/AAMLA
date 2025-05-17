@@ -28,8 +28,8 @@ from transformers.activations import ACT2FN
 from transformers.models.llama.modeling_llama import (
     apply_rotary_pos_emb,
     LlamaConfig,
-    LlamaDynamicNTKScalingRotaryEmbedding,
-    LlamaLinearScalingRotaryEmbedding,
+    # LlamaDynamicNTKScalingRotaryEmbedding,
+    # LlamaLinearScalingRotaryEmbedding,
     LlamaPreTrainedModel,
     LlamaRMSNorm,
     LlamaRotaryEmbedding,
@@ -1044,27 +1044,34 @@ class LlamaPrefixAttention(nn.Module):
     def _init_rope(self):
         if self.config.rope_scaling is None:
             self.rotary_emb = LlamaRotaryEmbedding(
-                self.head_dim,
-                max_position_embeddings=self.max_position_embeddings,
-                base=self.rope_theta,
+                self.config
+                # self.head_dim,
+                # max_position_embeddings=self.max_position_embeddings,
+                # base=self.rope_theta,
             )
         else:
             scaling_type = self.config.rope_scaling["type"]
             scaling_factor = self.config.rope_scaling["factor"]
             if scaling_type == "linear":
-                self.rotary_emb = LlamaLinearScalingRotaryEmbedding(
-                    self.head_dim,
-                    max_position_embeddings=self.max_position_embeddings,
-                    scaling_factor=scaling_factor,
-                    base=self.rope_theta,
-                )
+                self.rotary_emb = LlamaRotaryEmbedding(self.config)
+                # self.rotary_emb = LlamaLinearScalingRotaryEmbedding(
+                #     self.head_dim,
+                #     max_position_embeddings=self.max_position_embeddings,
+                #     scaling_factor=scaling_factor,
+                #     base=self.rope_theta,
+                # )
             elif scaling_type == "dynamic":
-                self.rotary_emb = LlamaDynamicNTKScalingRotaryEmbedding(
-                    self.head_dim,
-                    max_position_embeddings=self.max_position_embeddings,
-                    scaling_factor=scaling_factor,
-                    base=self.rope_theta,
+                logger.warning_rank0(
+                    "Dynamic NTK scaling may not work well with fine-tuning. "
+                    "See: https://github.com/huggingface/transformers/pull/24653"
                 )
+                self.rotary_emb = LlamaRotaryEmbedding(self.config)
+                # self.rotary_emb = LlamaDynamicNTKScalingRotaryEmbedding(
+                #     self.head_dim,
+                #     max_position_embeddings=self.max_position_embeddings,
+                #     scaling_factor=scaling_factor,
+                #     base=self.rope_theta,
+                # )
             else:
                 raise ValueError(f"Unknown RoPE scaling type {scaling_type}")
 

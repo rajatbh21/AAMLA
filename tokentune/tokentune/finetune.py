@@ -340,7 +340,7 @@ def fine_tune(args):
             task_type="CAUSAL_LM",
         )
 
-        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
         # since we not using gradient checkpointing and 8 bit.
         # hidden states after embeddings do not require grad
         # so we force it to require grad.
