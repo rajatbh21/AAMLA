@@ -85,6 +85,7 @@ from transformers.trainer_callback import (
     TrainerCallback,
     TrainerControl,
     TrainerState,
+    ExportableState,
 )
 from transformers.trainer_pt_utils import (
     DistributedLengthGroupedSampler,
@@ -364,6 +365,9 @@ class OurTrainer(Trainer):
             logging_steps=self.args.logging_steps,
             eval_steps=self.args.eval_steps,
             save_steps=self.args.save_steps,
+            stateful_callbacks=[
+                cb for cb in self.callback_handler.callbacks + [self.control] if isinstance(cb, ExportableState)
+            ],
         )
         self.state.is_hyper_param_search = trial is not None
 
@@ -617,9 +621,10 @@ class OurTrainer(Trainer):
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
+                    grad_norm=nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm).item(),
 
                     self._maybe_log_save_evaluate(
-                        tr_loss=tr_loss, grad_norm=nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm).item(), 
+                        tr_loss=tr_loss, grad_norm=grad_norm, 
                         model=model, trial=trial, epoch=epoch, 
                         ignore_keys_for_eval=ignore_keys_for_eval, 
                         start_time=start_time, learning_rate=self._get_learning_rate())
@@ -637,7 +642,7 @@ class OurTrainer(Trainer):
                 self.control.should_training_stop = True
 
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
-            self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+            self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, start_time, self._get_learning_rate())
 
             if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
                 if is_torch_xla_available():
@@ -849,6 +854,7 @@ class OurTrainer(Trainer):
                 Path(os.path.join(output_dir, "user_content.pt")).touch()
         elif (
             self.is_fsdp_xla_enabled is not None
+            and self.is_fsdp_xla_enabled
         ):
             from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, StateDictType, FullStateDictConfig
             full_state_dict_config = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
