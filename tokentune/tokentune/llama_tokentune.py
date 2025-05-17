@@ -628,7 +628,7 @@ class LlamaPrefixModel(LlamaPreTrainedModel):
         )
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
-        self.gradient_checkpointing = False
+        self.gradient_checkpointing = True
         self.prefix_length: int = (
             config.prefix_length if hasattr(config, "prefix_length") else 0
         )
@@ -1043,12 +1043,12 @@ class LlamaPrefixAttention(nn.Module):
 
     def _init_rope(self):
         if self.config.rope_scaling is None:
-            self.rotary_emb = LlamaRotaryEmbedding(
-                self.config
-                # self.head_dim,
-                # max_position_embeddings=self.max_position_embeddings,
-                # base=self.rope_theta,
-            )
+            self.rotary_emb = LlamaRotaryEmbedding(self.config)
+            # self.rotary_emb = LlamaRotaryEmbedding(
+            #     self.head_dim,
+            #     max_position_embeddings=self.max_position_embeddings,
+            #     base=self.rope_theta,
+            # )
         else:
             scaling_type = self.config.rope_scaling["type"]
             scaling_factor = self.config.rope_scaling["factor"]
@@ -1129,14 +1129,17 @@ class LlamaPrefixAttention(nn.Module):
         kv_prefix_len = key_states_prefix.shape[-2]
         if past_key_value is not None:
             kv_seq_len += past_key_value[0].shape[-2]
-        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len + kv_prefix_len)
+        # cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len + kv_prefix_len)
+        cos, sin = self.rotary_emb(value_states, position_ids)
+        cos_prefix, sin_prefix = self.rotary_emb(value_states, position_ids_prefix)
+
         with torch.no_grad():
             query_states, key_states = apply_rotary_pos_emb(
                 query_states, key_states, cos, sin, position_ids
             )
 
         query_states_prefix, key_states_prefix = apply_rotary_pos_emb(
-            query_states_prefix, key_states_prefix, cos, sin, position_ids_prefix
+            query_states_prefix, key_states_prefix, cos_prefix, sin_prefix, position_ids_prefix
         )
 
         if past_key_value is not None:

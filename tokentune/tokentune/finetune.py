@@ -162,7 +162,7 @@ def main():
     parser.add_argument(
         "--lora_target_modules",
         nargs="+",
-        default=["gate_proj", "down_proj", "up_proj"],
+        default=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "down_proj", "up_proj"],
     )
 
     # Parallelization
@@ -441,7 +441,7 @@ def fine_tune(args):
         weight_decay=args.weight_decay,
         num_train_epochs=args.num_epochs,
         warmup_steps=args.warmup_steps,
-        evaluation_strategy="no",
+        eval_strategy="no",
         eval_steps=None,
         save_steps=args.save_steps,
         save_total_limit=args.save_total_limit,
