@@ -7,9 +7,10 @@
 # LICENSE file in the root directory of this source tree.
 
 scriptDir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
-cd "${scriptDir}"/../../ || exit  # cd to project root
+# cd "${scriptDir}"/../../ || exit  # cd to project root
+export CUDA_VISIBLE_DEVICES=1
 
-python -u ./tokentune/finetune.py \
+python -u $scriptDir/../../tokentune/finetune.py \
     --model_name_or_path codellama/CodeLlama-7b-Instruct-hf \
     --dataset_name_or_path yangyiyao/HaVen-KL-Dataset \
     --prompt_template_name_or_path ./tokentune/haven_template.json \
