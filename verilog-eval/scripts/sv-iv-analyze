@@ -29,6 +29,7 @@ from dataclasses import dataclass
 
 from langchain.schema   import SystemMessage, HumanMessage
 
+from scipy.special import comb
 #-------------------------------------------------------------------------
 # Command line processing
 #-------------------------------------------------------------------------
@@ -81,6 +82,11 @@ class Results:
       self.data[problem].append(ResultRecord())
     self.data[problem][sample-1] = record
 
+  def compute_pass_at_k(self, n, c, k):
+    if c == 0 or k > n:
+        return 0.0
+    return 1 - comb(n - c, k) / comb(n, k)
+
   def print( self ):
 
     problem_str_width = 0
@@ -95,6 +101,10 @@ class Results:
     total_tokens        = 0
     total_cost          = 0.0
     total_gsidx         = 0.0
+
+    total_pass_at_1 = 0.0
+    total_pass_at_5 = 0.0
+    total_problems  = 0
 
     row_strs = []
     for problem,row in self.data.items():
@@ -141,6 +151,12 @@ class Results:
       pass_rate     = int((npass/nsamples)*100)
       pass_rate_sum += pass_rate
 
+      pass_at_1 = self.compute_pass_at_k(nsamples, npass, 1)
+      pass_at_5 = self.compute_pass_at_k(nsamples, npass, 5)
+
+      total_pass_at_1 += pass_at_1
+      total_pass_at_5 += pass_at_5
+
       # Calculate the Gini-Simpson Index
       # https://en.wikipedia.org/wiki/Diversity_index#Gini%E2%80%93Simpson_index
 
@@ -177,6 +193,8 @@ class Results:
     print(f"avg_tokens_per_resp   = {(total_resp_tokens/total_queries):>10.2f}")
     print(f"avg_tokens_per_query  = {((total_prompt_tokens+total_resp_tokens)/total_queries):>10.2f}")
     print(f"total_cost            = {total_cost:>10.2f}")
+    print(f"pass@1                = {(total_pass_at_1/len(self.data)):>10.4f}")
+    print(f"pass@5                = {(total_pass_at_5/len(self.data)):>10.4f}")
     print("")
 
   def write_csv( self, csv_filename ):
@@ -191,9 +209,12 @@ class Results:
         nsamples      = len(row)
         pass_rate     = int((npass/nsamples)*100)
 
+        pass_at_1 = self.compute_pass_at_k(nsamples, npass, 1)
+        pass_at_5 = self.compute_pass_at_k(nsamples, npass, 5)
+        
         row_str = ",".join([record.passfail for record in row])
 
-        file.write(f"{problem},{npass},{nsamples},{pass_rate/100.0},{row_str}\n")
+        file.write(f"{problem},{npass},{nsamples},{pass_rate/100.0},{pass_at_1:.4f},{pass_at_5:.4f},{row_str}\n")
 
 #-------------------------------------------------------------------------
 # analyze_result
