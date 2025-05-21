@@ -1,4 +1,3 @@
-import GPUtil
 from pynvml import *
 import torch.distributed as dist
 from size_estimator import SizeEstimator
@@ -16,9 +15,9 @@ def main():
     # Separate method and PEFT
     parser.add_argument(
         '--method',
-        choices=['none', 'mezo', 'tokentune'],
-        default='none',
-        help="Method to apply: 'none', 'mezo', or 'tokentune'"
+        choices=['fft', 'mezo', 'tokentune'],
+        default='fft',
+        help="Method to apply: 'fft', 'mezo', or 'tokentune'"
     )
 
     parser.add_argument(
@@ -169,7 +168,7 @@ def main():
     print(f"[m_pbase]: {m_pbase} MB")
 
     esti_mem, real_bs = se.estimate_size(m_init=m_pbase + extra_peak)
-    print(f"Estimated peak memory: {esti_mem:.1f} MB with batch size {real_bs}")
+    print(f"Estimated peak memory: {esti_mem:.1f}")
 
 if __name__== "__main__":
     main()

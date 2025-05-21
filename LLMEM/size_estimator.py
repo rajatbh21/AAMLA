@@ -6,7 +6,7 @@ import numpy as np
 class SizeEstimator(object):
 
     def __init__(self, model, batch, real_bs, bytes=2, bytes_input=4, 
-                 gpu_n=1, tp=0, lm_fp32=True, m_total=0, method='none', peft='none', gradient_checkpointing=True, token_ratio=0.1):
+                 gpu_n=1, tp=0, lm_fp32=True, m_total=0, method='fft', peft='none', gradient_checkpointing=True, token_ratio=0.1):
         '''
         Estimates the size of PyTorch models in memory
         for a given input size
@@ -183,6 +183,8 @@ class SizeEstimator(object):
         '''Calculate bytes to store input'''
         # self.input_bytes = np.prod(np.array(self.input_size))*self.bytes
         self.input_bytes = np.prod(self.inout_sizes[0])*self.bytes_input
+        if self.method == "tokentune":
+            self.input_bytes = int(self.input_bytes * self.token_ratio)
         if self.input_bytes % self.base_size != 0:
             self.input_bytes = int(self.input_bytes / self.base_size) * self.base_size + self.base_size
 

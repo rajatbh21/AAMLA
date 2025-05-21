@@ -2,9 +2,15 @@
 set -euo pipefail
 set -x
 
-# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [none|mezo|tokentune] [none|lora|dora] [true|false]
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate llamaf
+
+echo ">>> Using Python: $(which python)"
+python -c "import sys; print('>>> sys.executable:', sys.executable)"
+
+# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune] [none|lora|dora] [true|false]
 if [ "$#" -lt 3 ] || [ "$#" -gt 6 ]; then
-  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [none|mezo|tokentune] [none|lora|dora] [true|false]"
+  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune] [none|lora|dora] [true|false]"
   exit 1
 fi
 
@@ -42,8 +48,8 @@ if [ "$GCKP_FLAG" = "true" ]; then
   EXTRA_OPTS+=" --gradient_checkpointing True"
 fi
 
-torchrun --nproc_per_node=1 \
-  run.py \
+$(which python) -m torch.distributed.run --nproc_per_node=1 \
+  LLMEM/run.py \
     --model   "${MODEL_NAME}" \
     --batch   "${BATCH_SIZE}" \
     --seq_len "${SEQ_LEN}" \
