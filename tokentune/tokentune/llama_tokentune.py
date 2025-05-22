@@ -58,6 +58,38 @@ as well as dense and normalization layers, refer to Section 3 of the paper, part
 """
 
 
+from transformers import DataCollatorWithPadding
+from torch.nn.utils.rnn import pad_sequence
+
+
+@dataclass
+class DataCollatorWithLabelPadding:
+    def __init__(self, tokenizer, padding=True, max_length=None, pad_to_multiple_of=None, return_tensors="pt", label_pad_token_id=-100):
+        self.tokenizer = tokenizer
+        self.padding = padding
+        self.max_length = max_length
+        self.pad_to_multiple_of = pad_to_multiple_of
+        self.return_tensors = return_tensors
+        self.label_pad_token_id = label_pad_token_id
+        self.base_collator = DataCollatorWithPadding(
+            tokenizer=tokenizer,
+            padding=padding,
+            max_length=max_length,
+            pad_to_multiple_of=pad_to_multiple_of,
+            return_tensors=return_tensors,
+        )
+
+    def __call__(self, features):
+        labels = [f.pop("labels") for f in features]  # features에서 'labels' 제거
+
+        batch = self.base_collator(features)
+
+        labels = [torch.tensor(label, dtype=torch.long) for label in labels]
+        batch["labels"] = pad_sequence(labels, batch_first=True, padding_value=self.label_pad_token_id)
+
+        return batch
+
+
 @dataclass
 class DataCollatorWithPaddingForPrefix:
     """

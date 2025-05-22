@@ -16,7 +16,7 @@ import torch
 import transformers
 from datasets import load_dataset
 
-from llama_tokentune import DataCollatorWithPaddingForPrefix, LlamaPrefixForCausalLM
+from llama_tokentune import DataCollatorWithPaddingForPrefix, LlamaPrefixForCausalLM, DataCollatorWithLabelPadding
 from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 from peft.tuners.lora import LoraLayer
 
@@ -57,6 +57,9 @@ def log_config(args):
 
 
 class GpuMemoryCallback(TrainerCallback):
+    def __init__(self):
+        self.total_max = 0
+
     def on_step_end(self, args, state, control, logs=None, **kwargs):
         gc.collect()
         torch.cuda.empty_cache()
@@ -64,10 +67,12 @@ class GpuMemoryCallback(TrainerCallback):
         allocated_memory = torch.cuda.memory_allocated(0) / 1024**2
         reserved_memory = torch.cuda.memory_reserved(0) / 1024**2
         max_reserved_memory = torch.cuda.max_memory_reserved(0) / 1024**2
+        if max_reserved_memory > self.total_max:
+                self.total_max = max_reserved_memory
         if state.is_local_process_zero:
             logger.info(
-                "GPU memory: (Allocated) {:.0f}MB, (Reserved) {:.0f}MB (Max) {:.0f}MB".format(
-                    allocated_memory, reserved_memory, max_reserved_memory
+                "GPU memory: (Allocated) {:.0f}MB, (Reserved) {:.0f}MB (Max) {:.0f}MB (Total Max) {:.0f}MB".format(
+                    allocated_memory, reserved_memory, max_reserved_memory, self.total_max
                 )
             )
             torch.cuda.reset_peak_memory_stats()
@@ -458,7 +463,7 @@ def fine_tune(args):
         train_dataset=train_data,
         eval_dataset=val_data,
         tokenizer=tokenizer,
-        data_collator=data_collator_prefix if args.tokentune else default_data_collator,
+        data_collator=data_collator_prefix if args.tokentune else DataCollatorWithLabelPadding(tokenizer=tokenizer, padding=True, max_length=args.max_length, label_pad_token_id=-100,),# default_data_collator,
         callbacks=[GpuMemoryCallback, TensorBoardCallback],
     )
 

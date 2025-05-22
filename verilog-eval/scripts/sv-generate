@@ -66,10 +66,14 @@ def parse_cmdline():
   p.add_argument(       "--output",      type=str,   default="-" )
   p.add_argument(       "--task",        type=str,   default="code-complete-iccad2023" )
   p.add_argument( "prompt_filename" )
-  # p.add_argument("--model_path", type=str, default="yangyiyao/HaVen-CodeQwen")
+  p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/LLaMA-Factory/saves/codellama-7b/dora/sft/checkpoint-23502")
   # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/MeZO/large_models/result/HaVen-CodeLlama-7b-Instruct-hf-mezo-ft-21090-8-1e-6-1e-3-0/checkpoint-20000")
   # p.add_argument("--model_path", type=str, default="/media/Data_3/hyunwooo/rajat-model/codellama-7b/dora/sft/checkpoint-5874")
+<<<<<<< Updated upstream
   p.add_argument("--model_path", type=str, default="/home/kang/.cache/huggingface/hub/models--jouhy--mezo-8-5e5/snapshots/ad9e8b2a60971e04eb73908b574daa2b44251e58")
+=======
+  # p.add_argument("--model_path", type=str, default="/home/hyunwooo/workspace-rajat/MELA/tokentune/saves/codellama-CodeLlama-7b-Instruct-hf-yangyiyao-HaVen-KL-Dataset-lora-tokentune-0.3/checkpoint-23502")
+>>>>>>> Stashed changes
 
   opts = p.parse_args()
   if opts.help: p.error()
@@ -390,16 +394,15 @@ def main():
     base_model_name = "codellama/CodeLlama-7b-Instruct-hf"
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
     
-    ##  lora or dora
-    # local_model = AutoModelForCausalLM.from_pretrained(base_model_name, torch_dtype=torch.bfloat16)
-    # local_model = PeftModel.from_pretrained(local_model, model_path)
-    # local_model = local_model.to(torch.bfloat16)
-    # local_model = local_model.merge_and_unload()
-    # local_model = local_model.cuda()
-    ## mezo
-    local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16).cuda()
-    ## tokentune
-    # local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16).cuda()
+    ##  lora or dora or tokentune
+    if 'lora' in model_path or 'dora' in model_path:
+      local_model = AutoModelForCausalLM.from_pretrained(base_model_name, torch_dtype=torch.bfloat16)
+      local_model = PeftModel.from_pretrained(local_model, model_path)
+      local_model = local_model.to(torch.bfloat16)
+      local_model = local_model.merge_and_unload()
+      local_model = local_model.cuda()
+    else:
+      local_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16).cuda()
 
     # class EndmoduleCriteria(StoppingCriteria):
     #     def __init__(self, terminator_id):

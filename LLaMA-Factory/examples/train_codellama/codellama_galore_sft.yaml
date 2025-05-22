@@ -24,7 +24,7 @@ dataloader_num_workers: 4
 ### output
 output_dir: saves/codellama-7b/galore/sft
 logging_steps: 10
-save_steps: 500
+save_steps: 10000
 plot_loss: true
 overwrite_output_dir: true
 save_only_model: false
