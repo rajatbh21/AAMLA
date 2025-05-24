@@ -31,6 +31,8 @@ class SizeEstimator(object):
         self.cudnn_workspace = 0
         self.activation_bytes = 0
 
+        self.apollo_rank = 128
+
 
     def get_output_sizes(self):
 
@@ -119,64 +121,22 @@ class SizeEstimator(object):
             total_bytes += b_param
 
             if requires:
-                total_bytes += b_param
+                if self.method == 'apollo':
+                    pass
+                else:
+                    total_bytes += b_param
 
                 b_opt = elems * self.bytes * 2  # fp32
+                if self.method == 'apollo':
+                    b_opt *= (self.apollo_rank / elems)
                 b_opt = b_opt / max(1, self.gpu_n)
                 if b_opt % self.base_size != 0:
                     b_opt = (b_opt // self.base_size + 1) * self.base_size
+
                 total_bytes += 2 * b_opt
 
-
         self.param_bytes_mem = total_bytes
-
-    # def param_bytes(self):
-    #     mods = list(self.model.modules())
-    #     param_sizes =[]
-    #     for i in range(1, len(mods)):
-    #         if not 'Embedding' in mods[i]._get_name():
-    #            if not mods[i]._get_name() in ['Linear']: #, 'ReLU', 'LayerNorm']:
-    #                 continue
-    #         m = mods[i]
-    #         p = list(m.parameters())
-    #         for j in range(len(p)):
-    #             param_sizes.append(np.array(p[j].size()))
-
-    #     '''Calculate total number of bytes to store `model` parameters'''
-    #     total_bytes = 0
-    #     for i in range(len(param_sizes)):
-    #         s = param_sizes[i]
-    #         bytes = np.prod(np.array(s))*self.bytes
-    #         if bytes % self.base_size != 0:
-    #             bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-    #         if i == len(param_sizes) - 1:
-    #             # break
-    #             total_bytes += bytes# / self.gpu_n
-    #         else:
-    #             # Chunk-based mixed-precision model parameter memory
-    #             # 1. Parameters/gradients (fp16)
-    #             if not self.tp:
-    #                 if self.gpu_n > 1:  # ZeRO-3 Optimizer
-    #                     # total_bytes += bytes
-    #                     bytes = bytes * (self.gpu_n - 1) / self.gpu_n
-    #                     if bytes % self.base_size != 0:
-    #                         bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-    #                     total_bytes += bytes
-    #             elif self.tp and self.gpu_n > 1 and self.tp != self.gpu_n: # DP + TP (Hybrid parallelism)
-    #                 bytes = bytes * ((self.gpu_n - self.tp) / self.gpu_n - 1 / self.gpu_n)
-    #                 if bytes % self.base_size != 0:
-    #                     bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-    #                 total_bytes += bytes
-    #             # 2. optimizer parameters (fp32)
-    #             bytes = np.prod(np.array(s))*self.bytes*2
-    #             bytes = bytes / self.gpu_n
-    #             if bytes % self.base_size != 0:
-    #                 bytes = int(bytes / self.base_size) * self.base_size + self.base_size
-    #             ##### Real-size-based optimizer states memory
-    #             # 3. gradient momentums (fp32), gradient variances (fp32)
-    #             total_bytes += 2*bytes
-    #             ##########################
-    #     self.param_bytes_mem = total_bytes
+  
 
 
     def calc_input_bytes(self):
@@ -191,6 +151,20 @@ class SizeEstimator(object):
 
     def calc_output_bytes(self):
         '''Calculate bytes to store forward and backward pass'''
+
+        # collect max forward activation for inference mode
+        if self.method == 'mezo':
+            max_bytes = 0
+            for sz in self.inout_sizes:
+                elems = np.prod(sz)
+                b = elems * np.prod(sz)
+                b = elems * self.bytes
+                if b % self.base_size != 0:
+                    b = int(b / self.base_size) * self.base_size + self.base_size
+                max_bytes = max(max_bytes, b)
+            self.inout_bytes = max_bytes
+            return
+
         total_bytes = 0
         total_backward_all_gather_bytes = 0
         for i in range(0, len(self.inout_sizes)):
@@ -322,9 +296,12 @@ class SizeEstimator(object):
 
         if self.real_bs > 0:
             print(self.param_bytes_mem/(1024**2), self.inout_bytes/(1024**2), self.input_bytes/(1024**2), self.m_init)
-            total = (self.param_bytes_mem 
-                   + self.inout_bytes 
-                   + self.input_bytes )            
+            if self.method == 'mezo':
+                total = self.inout_bytes + self.input_bytes
+            else:
+                total = (self.param_bytes_mem 
+                    + self.inout_bytes 
+                    + self.input_bytes )            
             total_mb = total/(1024**2) + self.m_init
             return total_mb, self.real_bs
         else:

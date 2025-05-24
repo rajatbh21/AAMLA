@@ -8,9 +8,9 @@ conda activate llamaf
 echo ">>> Using Python: $(which python)"
 python -c "import sys; print('>>> sys.executable:', sys.executable)"
 
-# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune] [none|lora|dora] [true|false]
+# usage: ./run_llmem.sh <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune|apollo] [none|lora|dora] [true|false]
 if [ "$#" -lt 3 ] || [ "$#" -gt 6 ]; then
-  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune] [none|lora|dora] [true|false]"
+  echo "Usage: $0 <MODEL_NAME> <BATCH_SIZE> <SEQ_LEN> [fft|mezo|tokentune|apollo] [none|lora|dora] [true|false]"
   exit 1
 fi
 

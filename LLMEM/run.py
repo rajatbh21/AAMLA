@@ -6,6 +6,18 @@ import argparse
 from transformers import AutoModelForCausalLM, AutoConfig
 from peft import LoraConfig, get_peft_model, TaskType
 
+def estimate_kv_cache_memory(model_config, batch_size, seq_len, dtype_bytes=2):
+    num_layers = getattr(model_config, 'num_hidden_layers', None) or getattr(model_config, 'n_layer', None)
+    num_heads = getattr(model_config, 'num_attention_heads', None) or getattr(model_config, 'n_head', None)
+    hidden_size = getattr(model_config, 'hidden_size', None) or getattr(model_config, 'n_embd', None)
+
+    head_dim = hidden_size // num_heads
+    kv_per_token = 2 * num_heads * head_dim  # key + value per token
+    kv_cache_elements = batch_size * seq_len * num_layers * kv_per_token
+    kv_cache_bytes = kv_cache_elements * dtype_bytes
+    kv_cache_mb = kv_cache_bytes / (1024 ** 2)
+    return kv_cache_mb
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model',   type=str, required=True, help="Model path on HuggingFace")
@@ -15,9 +27,9 @@ def main():
     # Separate method and PEFT
     parser.add_argument(
         '--method',
-        choices=['fft', 'mezo', 'tokentune'],
+        choices=['fft', 'mezo', 'tokentune', 'apollo'],
         default='fft',
-        help="Method to apply: 'fft', 'mezo', or 'tokentune'"
+        help="Method to apply: 'fft', 'mezo', 'tokentune' or 'apollo'"
     )
 
     parser.add_argument(
@@ -167,8 +179,18 @@ def main():
     m_pbase = chunk_mem + cuda_context_mem - (after_used - prev_used)
     print(f"[m_pbase]: {m_pbase} MB")
 
-    esti_mem, real_bs = se.estimate_size(m_init=m_pbase + extra_peak)
-    print(f"Estimated peak memory: {esti_mem:.1f}")
+    kv_cache_mb = 0
+    if args.method == 'mezo':
+ 
+        kv_cache_mb += estimate_kv_cache_memory(config, real_bs, seq_len, dtype_bytes=model_dtype_bytes)
+        print(kv_cache_mb)
+    
+        esti_mem, real_bs = se.estimate_size(m_init=m_pbase)
+        esti_mem += kv_cache_mb
+        print(f"Estimated peak memory: {esti_mem:.1f}")
+    else:
+        esti_mem, real_bs = se.estimate_size(m_init=m_pbase + extra_peak)
+        print(f"Estimated peak memory: {esti_mem:.1f}")
 
 if __name__== "__main__":
     main()

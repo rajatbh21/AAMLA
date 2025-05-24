@@ -8,27 +8,21 @@ import pandas as pd
 from pyfiglet import Figlet
 
 offline_data = pd.DataFrame([
-    {"method": "fft+none",            "peak_mem": 12, "accuracy": 0.85, "time": 120},
     {"method": "fft+lora",            "peak_mem": 11, "accuracy": 0.85, "time": 120},
     {"method": "fft+dora",            "peak_mem": 10, "accuracy": 0.83, "time": 110},
     {"method": "tokentune+none",      "peak_mem": 11, "accuracy": 0.85, "time": 120},
     {"method": "tokentune+lora",      "peak_mem": 8,  "accuracy": 0.80, "time": 100},
-    {"method": "tokentune+dora",      "peak_mem": 7,  "accuracy": 0.78, "time":  95},
     {"method": "mezo+none",           "peak_mem": 8, "accuracy": 0.85, "time": 120},
-    {"method": "mezo+lora",           "peak_mem": 6,  "accuracy": 0.82, "time": 105},
-    {"method": "mezo+dora",           "peak_mem": 5,  "accuracy": 0.79, "time":  90},
+    {"method": "apollo+none",           "peak_mem": 5,  "accuracy": 0.79, "time":  90},
 ])
 
 COMBINATIONS = [
-    ("fft", "none"),
     ("fft", "lora"),
     ("fft", "dora"),
     ("tokentune", "none"),
     ("tokentune", "lora"),
-    ("tokentune", "dora"),
     ("mezo", "none"),
-    ("mezo", "lora"),
-    ("mezo", "dora"),
+    ("apollo", "none"),
 ]
 
 VRAM_MiB = torch.cuda.get_device_properties(0).total_memory / (1024**2) if torch.cuda.is_available() else None
@@ -73,6 +67,8 @@ def get_memory_estimates(model, batch_size, seq_length):
         key = f"{method}+{adapter}"
         mem = estimate_memory(model, batch_size, seq_length, method, adapter)
         estimates[key] = mem
+        if method == 'fft':
+            key.replace('fft', 'full fine-tuning')
         print(f"🔍 {key}: Estimated Memory = {mem:.2f} MiB")
     return estimates
 
