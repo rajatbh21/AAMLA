@@ -55,7 +55,7 @@ You will also need the following Python packages:
 ```
 pip install langchain langchain-openai langchain-nvidia-ai-endpoints langchain_community
 pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
-pip install transformers accelerate
+pip install transformers accelerate peft
 
 # if NumPy version >= 2, Downgrade
 pip install numpy==1.26.4
