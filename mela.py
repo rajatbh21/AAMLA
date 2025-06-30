@@ -8,12 +8,12 @@ import pandas as pd
 from pyfiglet import Figlet
 
 offline_data = pd.DataFrame([
-    {"method": "fft+lora",            "peak_mem": 11, "accuracy": 0.85, "time": 120},
-    {"method": "fft+dora",            "peak_mem": 10, "accuracy": 0.83, "time": 110},
-    {"method": "tokentune+none",      "peak_mem": 11, "accuracy": 0.85, "time": 120},
-    {"method": "tokentune+lora",      "peak_mem": 8,  "accuracy": 0.80, "time": 100},
-    {"method": "mezo+none",           "peak_mem": 8, "accuracy": 0.85, "time": 120},
-    {"method": "apollo+none",           "peak_mem": 5,  "accuracy": 0.79, "time":  90},
+    {"method": "fft+lora",            "peak_mem": 46549, "accuracy": 39.87, "time": 27},
+    {"method": "fft+dora",            "peak_mem": 47733, "accuracy": 41.09, "time": 32.5},
+    {"method": "tokentune+none",      "peak_mem": float("inf"), "accuracy": float("inf"), "time": float("inf")},
+    {"method": "tokentune+lora",      "peak_mem": 47395,  "accuracy": 17.82, "time": 18.8},
+    {"method": "mezo+none",           "peak_mem": 22397, "accuracy": 19.04, "time": 13.6},
+    {"method": "apollo+none",           "peak_mem": 47359,  "accuracy": 36.60, "time":  11},
 ])
 
 COMBINATIONS = [
@@ -24,6 +24,15 @@ COMBINATIONS = [
     ("mezo", "none"),
     ("apollo", "none"),
 ]
+
+key_to_method_name = {
+    "fft+lora": "LoRA",
+    "fft+dora": "DoRA",
+    "tokentune+none": "TokenTune",
+    "tokentune+lora": "TokenTune+LoRA",
+    "mezo+none": "MeZO",
+    "apollo+none": "APOLLO"
+}
 
 VRAM_MiB = torch.cuda.get_device_properties(0).total_memory / (1024**2) if torch.cuda.is_available() else None
 
@@ -67,9 +76,8 @@ def get_memory_estimates(model, batch_size, seq_length):
         key = f"{method}+{adapter}"
         mem = estimate_memory(model, batch_size, seq_length, method, adapter)
         estimates[key] = mem
-        if method == 'fft':
-            key.replace('fft', 'full fine-tuning')
-        print(f"🔍 {key}: Estimated Memory = {mem:.2f} MiB")
+    
+        print(f"🔍 {key_to_method_name[key]}: Estimated Memory = {mem:.2f} MiB")
     return estimates
 
 
@@ -89,13 +97,32 @@ def select_method(estimates, priority):
 
     display_choices = []
     for _, row in df.iterrows():
-        mark = '✅' if VRAM_MiB and row['est_mem'] <= VRAM_MiB else '❌'
-        label = f"{mark} {row['method']} | Mem: {row['est_mem']:.2f}GB | Acc: {row['accuracy']} | Time: {row['time']}s"
+        key = row['method']
+        method_name = key_to_method_name.get(key, key)
+        peak_mem = row['peak_mem']
+        est_mem = row['est_mem']
+
+        mark = '✅' if VRAM_MiB and est_mem <= VRAM_MiB else '❌'
+        if est_mem > VRAM_MiB:
+            continue
+        label = (
+            f"{mark} {method_name} | Est: {est_mem:.2f} | Peak: {peak_mem:.2f} MiB | "
+            f"Acc: {row['accuracy']}% | Time: {row['time']}h"
+        )
         display_choices.append(label)
+
     display_choices.append("🔙 Go back")
 
     pick = questionary.select("🚀 Select method to run:", choices=display_choices).ask()
-    return None if pick == "🔙 Go back" else pick.split()[1]
+    if pick == "🔙 Go back":
+        return None
+
+    # Get the key back from the method name
+    for key, name in key_to_method_name.items():
+        if name in pick:
+            return key
+    return None
+
 
 
 def main():
@@ -128,8 +155,23 @@ def main():
             if selected_method is None:
                 step = 2
             else:
-                print(f"▶️ Starting fine-tuning with {selected_method}...")
-                subprocess.run(["bash", "./run_llmem.sh", model, str(batch_size), str(seq_length), *selected_method.split('+'), "true"])
+                method_display = key_to_method_name[selected_method]
+                print(f"▶️ Starting fine-tuning with {method_display}...")
+
+                if selected_method == 'fft+lora':
+                    subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_lora_sft.yaml"])
+
+                elif selected_method == 'fft+dora':
+                    subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_dora_sft.yaml"])
+
+                elif selected_method == 'apollo+none':
+                    subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_apollo_sft.yaml"])
+
+                elif selected_method == 'mezo+none':
+                    subprocess.run(["bash", "-c", "MODEL=codellama/CodeLlama-7b-Instruct-hf TASK=HaVen MODE=ft BS={} LR=1e-6 EPS=1e-4 bash MeZO/large_models/mezo.sh".format(batch_size)])
+
+                elif selected_method in ['tokentune+none', 'tokentune+lora']:
+                    subprocess.run(["bash", "tokentune/scripts/train/lora-tokentune-codellama.sh"])
                 break
 
 
