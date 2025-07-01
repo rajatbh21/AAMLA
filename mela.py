@@ -4,6 +4,7 @@ import questionary
 import sys
 import torch
 import pandas as pd
+import argparse
 
 from pyfiglet import Figlet
 
@@ -127,6 +128,35 @@ def select_method(estimates, priority):
 
 def main():
     print_banner()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-acc", action="store_true")
+    parser.add_argument("-time", action="store_true")
+    args = parser.parse_args()
+
+    if args.acc or args.time:
+        model, batch_size, seq_length = get_inputs()
+        estimates = get_memory_estimates(model, batch_size, seq_length)
+        priority = "accuracy" if args.acc else "time"
+        
+        selected_method = select_method(estimates, priority)
+        if selected_method:
+            method_display = key_to_method_name[selected_method]
+            print(f"▶️ Starting fine-tuning with {method_display}...")
+
+            if selected_method == 'fft+lora':
+                subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_lora_sft.yaml"])
+            elif selected_method == 'fft+dora':
+                subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_dora_sft.yaml"])
+            elif selected_method == 'apollo+none':
+                subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_apollo_sft.yaml"])
+            elif selected_method == 'mezo+none':
+                subprocess.run(["bash", "-c", f"MODEL=codellama/CodeLlama-7b-Instruct-hf TASK=HaVen MODE=ft BS={batch_size} LR=1e-6 EPS=1e-4 bash MeZO/large_models/mezo.sh"])
+            elif selected_method in ['tokentune+none', 'tokentune+lora']:
+                subprocess.run(["bash", "tokentune/scripts/train/lora-tokentune-codellama.sh"])
+        else:
+            print("❌ No valid method fits in available GPU memory.")
+        return  
 
     step = 0
     model, batch_size, seq_length = None, None, None
