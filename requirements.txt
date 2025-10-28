@@ -29,3 +29,11 @@ tensorboard==2.17.0
 GPUtil
 importlib_metadata
 apollo_torch
+questionary
+pyfiglet
+nvidia-ml-py
+
+langchain
+langchain-openai
+langchain-nvidia-ai-endpoints
+langchain_community

@@ -28,8 +28,25 @@ Install requirements
 ```bash
 git clone https://github.com/rajatbh21/MELA.git
 cd MELA
-pip install -e ".[torch]"
+pip install -r requirements.txt
 ```
+
+Install requirements for evaluation(pass@k)
+```bash
+sudo apt install autoconf
+sudo apt install gperf
+sudo apt install flex
+sudo apt install bison
+
+git clone https://github.com/steveicarus/iverilog.git
+cd iverilog
+git checkout v12-branch
+sh autoconf.sh
+./configure
+make -j4
+make install
+```
+
 
 ### Usage
 1. Run MELA.
