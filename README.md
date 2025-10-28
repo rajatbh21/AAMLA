@@ -31,7 +31,7 @@ cd MELA
 pip install -r requirements.txt
 ```
 
-Install requirements for evaluation(pass@k)
+Install requirements for measuring pass@k
 ```bash
 sudo apt install autoconf
 sudo apt install gperf

@@ -190,19 +190,49 @@ def main():
 
                 if selected_method == 'fft+lora':
                     subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_lora_sft.yaml"])
+                    step = 4
 
                 elif selected_method == 'fft+dora':
                     subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_dora_sft.yaml"])
+                    step = 4
 
                 elif selected_method == 'apollo+none':
                     subprocess.run(["bash", "-c", "cd LLaMA-Factory && llamafactory-cli train examples/train_codellama/codellama_apollo_sft.yaml"])
+                    step = 4
 
                 elif selected_method == 'mezo+none':
                     subprocess.run(["bash", "-c", "MODEL=codellama/CodeLlama-7b-Instruct-hf TASK=HaVen MODE=ft BS={} LR=1e-6 EPS=1e-4 bash MeZO/large_models/mezo.sh".format(batch_size)])
+                    step = 4
 
                 elif selected_method in ['tokentune+none', 'tokentune+lora']:
                     subprocess.run(["bash", "tokentune/scripts/train/lora-tokentune-codellama.sh"])
-                break
+                    step = 4
+        elif step == 4:
+            user_input = input("🧠 Do you want to run inference and measure pass@k? (yes/no): ").strip().lower()
+            if user_input == "yes":
+                print("🚀 Running inference and measuring pass@k...")
+
+                # inference
+                subprocess.run([
+                    "bash", "-c",
+                    "python model_inference/inference_VerilogEval.py "
+                    "--model deepseek-ai/deepseek-coder-6.7b-instruct "
+                    "--n 1 "
+                    "--temperature 1.0 "
+                    "--gpu_name 7 "
+                    "--output_dir ./your_output_path "
+                    "--output_file your_output_file.jsonl "
+                    "--bench_type Machine"
+                ])
+
+                # measure pass@k
+                subprocess.run(["bash", "test_on_benchmark/run.sh"])
+            else:
+                print("✅ Fine-tuning complete. Skipping inference.")
+
+            break
+
+
 
 
 if __name__ == "__main__":
