@@ -5,6 +5,7 @@ import sys
 import torch
 import pandas as pd
 import argparse
+import os
 
 from pyfiglet import Figlet
 
@@ -210,19 +211,31 @@ def main():
         elif step == 4:
             user_input = input("🧠 Do you want to run inference and measure pass@k? (yes/no): ").strip().lower()
             if user_input == "yes":
+
+                while True:
+                    model_path = input("📁 Enter your fine-tuned model path: ").strip()
+                    if os.path.exists(model_path):
+                        break
+                    else:
+                        print(f"❌ Path not found: {model_path}")
+                        retry = input("🔁 Try again? (yes/no): ").strip().lower()
+                        if retry != "yes":
+                            print("⚠️ Skipping inference because model path is invalid.")
+                            break
+
                 print("🚀 Running inference and measuring pass@k...")
 
                 # inference
                 subprocess.run([
                     "bash", "-c",
-                    "python model_inference/inference_VerilogEval.py "
-                    "--model deepseek-ai/deepseek-coder-6.7b-instruct "
-                    "--n 1 "
-                    "--temperature 1.0 "
-                    "--gpu_name 7 "
-                    "--output_dir ./your_output_path "
-                    "--output_file your_output_file.jsonl "
-                    "--bench_type Machine"
+                    f"python model_inference/inference_VerilogEval.py "
+                    f"--model {model_path}"
+                    f"--n 1 "
+                    f"--temperature 1.0 "
+                    f"--gpu_name 7 "
+                    f"--output_dir ./your_output_path "
+                    f"--output_file your_output_file.jsonl "
+                    f"--bench_type Machine"
                 ])
 
                 # measure pass@k
