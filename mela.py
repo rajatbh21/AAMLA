@@ -6,6 +6,7 @@ import torch
 import pandas as pd
 import argparse
 import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from pyfiglet import Figlet
 
@@ -126,6 +127,83 @@ def select_method(estimates, priority):
     return None
 
 
+def run_pass_at_k():
+    while True:
+        model_path = questionary.text("📁 Enter your fine-tuned model path:").ask().strip()
+        if model_path and os.path.exists(model_path):
+            break
+        print(f"❌ Path not found: {model_path!r}")
+        retry = questionary.select("🔁 Try again?", choices=["yes", "no"]).ask()
+        if retry != "yes":
+            print("⚠️ Skipping inference because model path is invalid.")
+            return
+
+    print("🚀 Running inference and measuring pass@k...")
+
+    subprocess.run([
+        "python", "model_inference/inference_VerilogEval.py",
+        "--model", model_path,
+        "--n", "1",
+        "--temperature", "1.0",
+        "--gpu_name", "7",
+        "--output_dir", "./your_output_path",
+        "--output_file", "your_output_file.jsonl",
+        "--bench_type", "Machine",
+    ])
+
+    # measure pass@k
+    subprocess.run(["bash", "test_on_benchmark/run.sh"])
+
+
+def run_chat_inference():
+    model_id = questionary.text("🧠 Base / merged model path (HF repo id or local path):").ask()
+    if not model_id:
+        print("❌ model path is required.")
+        return
+
+    prompt = questionary.text("💬 Your prompt:").ask()
+    if not prompt:
+        print("❌ Empty prompt.")
+        return
+
+    temperature = questionary.text("🌡️ temperature (default 0.7):").ask() or "0.7"
+    max_new_tokens = questionary.text("📝 max_new_tokens (default 256):").ask() or "256"
+    gpu = questionary.text("🎯 GPU index — empty for auto:").ask().strip()
+
+    dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    if gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu
+        device_map = "auto"
+    else:
+        device_map = "auto"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=dtype,
+        device_map=device_map,
+        trust_remote_code=True,
+    )
+    model.eval()
+
+    inputs = tokenizer(prompt, return_tensors="pt")
+    if torch.cuda.is_available():
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=int(max_new_tokens),
+        do_sample=True,
+        temperature=float(temperature),
+        top_p=0.95,
+        eos_token_id=tokenizer.eos_token_id,
+        pad_token_id=tokenizer.eos_token_id if tokenizer.eos_token_id is not None else None,
+    )
+
+    gen_only = outputs[0][inputs["input_ids"].shape[-1]:]
+    text = tokenizer.decode(gen_only, skip_special_tokens=True)
+    print("\n=== Response ===\n" + text + "\n")
+
 
 def main():
     print_banner()
@@ -209,41 +287,25 @@ def main():
                     subprocess.run(["bash", "tokentune/scripts/train/lora-tokentune-codellama.sh"])
                     step = 4
         elif step == 4:
-            user_input = input("🧠 Do you want to run inference and measure pass@k? (yes/no): ").strip().lower()
-            if user_input == "yes":
+            while True:
+                choice = questionary.select(
+                    "Model Action:",
+                    choices=[
+                        "📈 Measure pass@k",
+                        "💬 Chat inference",
+                        "✅ Finish",
+                    ],
+                ).ask()
 
-                while True:
-                    model_path = input("📁 Enter your fine-tuned model path: ").strip()
-                    if os.path.exists(model_path):
-                        break
-                    else:
-                        print(f"❌ Path not found: {model_path}")
-                        retry = input("🔁 Try again? (yes/no): ").strip().lower()
-                        if retry != "yes":
-                            print("⚠️ Skipping inference because model path is invalid.")
-                            break
+                if choice == "📈 Measure pass@k":
+                    run_pass_at_k()
+                elif choice == "💬 Chat inference":
+                    run_chat_inference()
+                elif choice == "✅ Finish" or choice is None:
+                    print("✅ Pipeline finished.")
+                    break
 
-                print("🚀 Running inference and measuring pass@k...")
-
-                # inference
-                subprocess.run([
-                    "bash", "-c",
-                    f"python model_inference/inference_VerilogEval.py "
-                    f"--model {model_path}"
-                    f"--n 1 "
-                    f"--temperature 1.0 "
-                    f"--gpu_name 7 "
-                    f"--output_dir ./your_output_path "
-                    f"--output_file your_output_file.jsonl "
-                    f"--bench_type Machine"
-                ])
-
-                # measure pass@k
-                subprocess.run(["bash", "test_on_benchmark/run.sh"])
-            else:
-                print("✅ Fine-tuning complete. Skipping inference.")
-
-            break
+            break  
 
 
 
