@@ -32,6 +32,7 @@ apollo_torch
 questionary
 pyfiglet
 nvidia-ml-py
+triton==2.0.0
 
 langchain
 langchain-openai
