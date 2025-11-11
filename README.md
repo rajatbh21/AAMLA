@@ -21,7 +21,7 @@ conda activate mela
 
 Install pytorch
 ```bash
-pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.6.0
 ```
 
 Install requirements
@@ -33,20 +33,15 @@ pip install -r requirements.txt
 
 Install requirements for measuring pass@k
 ```bash
-sudo apt install autoconf
-sudo apt install gperf
-sudo apt install flex
-sudo apt install bison
-
-git clone https://github.com/steveicarus/iverilog.git
-cd iverilog
-git checkout v12-branch
-sh autoconf.sh
-./configure
-make -j4
-make install
+sudo apt-get install -y jq bc
 ```
+Install VCS
+- VCS is a Verilog compiler required for automated testing on benchmarks. Follow these steps to install and configure VCS:
 
+- Obtain VCS from Synopsys. Ensure you have the required license to use it.
+- Install VCS following the instructions provided in the official Synopsys documentation.
+- Add the VCS executable to your system's PATH environment variable.
+- Verify the installation by running:
 
 ### Usage
 1. Run MELA.

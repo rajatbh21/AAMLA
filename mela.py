@@ -138,21 +138,41 @@ def run_pass_at_k():
             print("⚠️ Skipping inference because model path is invalid.")
             return
 
-    print("🚀 Running inference and measuring pass@k...")
+    while True:
+        output_path = questionary.text("📁 Enter output path:").ask().strip()
+        if output_path and os.path.exists(output_path):
+            break
+        print(f"❌ Path not found: {output_path!r}")
+    
+    output_file = questionary.text("📁 Enter output file name:").ask().strip()
+
+    num_infer = questionary.text("📁 Enter the number of inference per a task:").ask().strip()
+
 
     subprocess.run([
         "python", "model_inference/inference_VerilogEval.py",
         "--model", model_path,
-        "--n", "1",
+        "--n", num_infer,
         "--temperature", "1.0",
-        "--gpu_name", "7",
-        "--output_dir", "./your_output_path",
-        "--output_file", "your_output_file.jsonl",
+        "--gpu_name", "0",
+        "--output_dir", output_path,
+        "--output_file", output_file + ".jsonl",
         "--bench_type", "Machine",
     ])
 
+    # .jsonl to .v
+    print("🚀 Transforming .jsonl to .v")
+    subprocess.run(["python", "test_on_benchmark/jsonl2v.py",
+                    "--input_jsonl", output_path + '/' + output_file + ".jsonl",
+                    "--output_dir", output_path
+                    ])
+    
     # measure pass@k
-    subprocess.run(["bash", "test_on_benchmark/run.sh"])
+    print("🚀 Running inference and measuring pass@k...")
+    subprocess.run(["bash", "test_on_benchmark/run.sh",
+                    "-p", output_path,
+                    "-n", num_infer
+                    ])
 
 
 def run_chat_inference():
