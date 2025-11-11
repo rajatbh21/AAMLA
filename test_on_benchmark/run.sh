@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 declare -A result_dic=(
     [reduction]='{"syntax_success": 0, "func_success": 0}'
     [circuit5]='{"syntax_success": 0, "func_success": 0}'
@@ -286,14 +287,14 @@ test_one_file() {
     success_keywords=("Passed" "passed" "Total mismatched samples is 0")
 
     for design in "${design_name[@]}"; do
-        if [[ -f "testbench/${benchmark_name}/${design}/makefile" ]]; then
-            local makefile_path="testbench/${benchmark_name}/${design}/makefile"
+        if [[ -f "test_on_benchmark/testbench/${benchmark_name}/${design}/makefile" ]]; then
+            local makefile_path="test_on_benchmark/testbench/${benchmark_name}/${design}/makefile"
             local makefile_content=$(<"$makefile_path")
             local modified_makefile_content="${makefile_content//\$\{TEST_DESIGN\}/${path}\/${testfile}\/${design}}"
             echo -e "$modified_makefile_content" > "$makefile_path"
 
             # Run 'make vcs' in the design folder
-            pushd "testbench/${benchmark_name}" > /dev/null
+            pushd "test_on_benchmark/testbench/${benchmark_name}" > /dev/null
             pushd "$design" > /dev/null
             make clean
             make vcs
@@ -342,7 +343,7 @@ test_one_file() {
 
 
 # File containing the tasks
-TASK_FILE="tasks_verilogeval_RTLLM.txt" # TODO
+TASK_FILE="test_on_benchmark/tasks_verilogeval_machine.txt" # TODO
 
 # Check if the file exists
 if [[ ! -f $TASK_FILE ]]; then
@@ -372,13 +373,46 @@ for key in "${!filtered_dic[@]}"; do
     echo "[$key]=${filtered_dic[$key]}"
 done
 
-path="/data/YYY/github_repo/HaVen/test_on_benchmark/model_output/new_data_RTLLM_0.2" # TODO
+path="verilogeval_out" # TODO
 
-benchmark_name="RTLLM" # TODO
+benchmark_name="VerilogEval-Machine" # TODO
 file_id=1
 n=0
 
 files_to_run=10 # TODO
+
+while (( "$#" )); do
+  case "$1" in
+    -p|--path)
+      path="$2"; shift 2 ;;
+    -p=*|--path=*)
+      path="${1#*=}"; shift ;;
+
+    -n|--num|--files)
+      files_to_run="$2"; shift 2 ;;
+    -n=*|--num=*|--files=*)
+      files_to_run="${1#*=}"; shift ;;
+
+    -b|--benchmark)
+      benchmark_name="$2"; shift 2 ;;
+    -b=*|--benchmark=*)
+      benchmark_name="${1#*=}"; shift ;;
+
+    -h|--help)
+      echo "Usage: $0 [-p PATH] [-n NUM] [-b BENCHMARK]"
+      exit 0 ;;
+
+    --) # 옵션 종료
+      shift; break ;;
+
+    *)
+      echo "Unknown option: $1"
+      echo "Use -h for help."
+      exit 1 ;;
+  esac
+done
+
+
 
 # three arguments are file of code to test, benchmark name, and current file id
 while ((n < files_to_run)); do

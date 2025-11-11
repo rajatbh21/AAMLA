@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 
 def jsonline_iter(file_path: str):
     with open(file_path, "r") as f:
@@ -32,7 +33,7 @@ def build_verilog_file(input_jsonl, output_dir):
     num_of_each_task = {}
     for item in jsonline_iter(input_jsonl):
         task_id = item["task_id"]
-        code = item["res"]
+        code = item["response"]
         code = parse_code(code)
         if task_id not in num_of_each_task:
             num_of_each_task[task_id] = 1
@@ -43,4 +44,9 @@ def build_verilog_file(input_jsonl, output_dir):
             f.write(code)
 
 if __name__ == "__main__":
-    build_verilog_file("example.jsonl", "output_dir")
+    parser = argparse.ArgumentParser(description="Build Verilog test files from JSONL results.")
+    parser.add_argument("--input_jsonl", type=str, required=True, help="Path to input JSONL file.")
+    parser.add_argument("--output_dir", type=str, required=True, help="Directory to save generated Verilog files.")
+    args = parser.parse_args()
+
+    build_verilog_file(args.input_jsonl, args.output_dir)

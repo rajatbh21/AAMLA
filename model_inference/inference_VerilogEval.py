@@ -13,7 +13,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
     default_data_collator,
-    is_torch_tpu_available,
+    is_torch_xla_available,
     set_seed,
 )
 import argparse
@@ -40,8 +40,8 @@ parser.add_argument('--n', type=int) # 'n' represent how many code candidates ge
 args = parser.parse_args()
 
 
-descri_path = './model_input/VerilogDescription_' + args.bench_type + '.jsonl'
-input_path = './model_input/VerilogEval_' + args.bench_type + '.jsonl'
+descri_path = 'model_inference/model_input/VerilogDescription_' + args.bench_type + '.jsonl'
+input_path = 'model_inference/model_input/VerilogEval_' + args.bench_type + '.jsonl'
 
 des_data = load_json(descri_path)
 input_data = load_json(input_path)
