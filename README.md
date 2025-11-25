@@ -1,21 +1,23 @@
 
-# 🧠 AAMLA  
+# AAMLA  
 ## An Autonomous Memory-Efficient Parameterizable LLM-Aided Hardware Generation Framework
 
 <p align="center">
-  <img src="logo.svg" width="420"/>
+  <img src="aamla.png" width="420"/>
 </p>
+
+[📄 **Paper**](https://www.techrxiv.org/users/948105/articles/1317868-aamla-an-autonomous-agentic-framework-for-memory-aware-llm-aided-hardware-generation)
 
 AAMLA is an **LLM‑driven, memory‑aware hardware generation framework** that combines:
 
-- 🧩 Parameter‑efficient tuning (MeZO, LoRA, LLMem++)  
-- ⚡ LLM‑based RTL generation (RTL‑Coder, RocketPPA)  
-- 🔧 Approximate arithmetic exploration (EvoApprox)  
-- 🤖 Automated HW/SW co‑design loops  
+- Parameter‑efficient tuning (MeZO, LoRA, LLMem++)  
+- LLM‑based RTL generation (RTL‑Coder, RocketPPA)  
+- Approximate arithmetic exploration (EvoApprox)  
+- Automated HW/SW co‑design loops  
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
 ## 1. Environment Setup
 
@@ -56,7 +58,7 @@ vcs -ID
 
 ---
 
-# 🕹️ Usage
+# Usage
 
 Run AAMLA:
 
@@ -77,7 +79,7 @@ Training + hardware generation starts automatically.
 
 ---
 
-# 🎉 Features
+# Features
 
 - Memory‑efficient LLM FT (MeZO, LoRA, LLMem++)
 - Autonomous approximate computing search
@@ -85,9 +87,3 @@ Training + hardware generation starts automatically.
 - PPA estimation (area, power, delay)
 - pass@k scoring for code quality
 - End‑to‑end hardware design automation
-
----
-
-<p align="center">
-  Made with ❤️ for efficient AI & hardware co‑design.
-</p>
