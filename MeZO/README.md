@@ -1,4 +1,4 @@
-## In our project, We use only [large_models](https://github.com/rajatbh21/MELA/tree/main/MeZO/large_models)
+## In our project, We use only [large_models](https://github.com/rajatbh21/AAMLA/tree/main/MeZO/large_models)
 
 # MeZO: Fine-Tuning Language Models with Just Forward Passes
 

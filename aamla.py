@@ -41,7 +41,7 @@ VRAM_MiB = torch.cuda.get_device_properties(0).total_memory / (1024**2) if torch
 
 def print_banner():
     f = Figlet(font='slant')
-    banner = f.renderText('MELA')
+    banner = f.renderText('AAMLA')
     print(banner)
     if VRAM_MiB:
         print(f"Available GPU Memory: {VRAM_MiB:.2f} MiB")

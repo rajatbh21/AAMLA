@@ -1,4 +1,4 @@
-# MELA
+# AAMLA
 An Autonomous Memory-Efficient Parameterizable LLM-Aided Hardware Generation Framework
 ![merge](assets/merged.png)
 
@@ -15,8 +15,8 @@ Related papers/repos:
 ### Installation
 Set virtual environment
 ```bash
-conda create -n mela python=3.10
-conda activate mela
+conda create -n aamla python=3.10
+conda activate aamla
 ```
 
 Install pytorch
@@ -26,8 +26,8 @@ pip install torch==2.6.0
 
 Install requirements
 ```bash
-git clone https://github.com/rajatbh21/MELA.git
-cd MELA
+git clone https://github.com/rajatbh21/AAMLA.git
+cd AAMLA
 pip install -r requirements.txt
 ```
 
@@ -44,9 +44,9 @@ Install VCS
 - Verify the installation by running:
 
 ### Usage
-1. Run MELA.
+1. Run AAMLA.
     ```bash
-    python mela.py
+    python aamla.py
     ```
 2. Choose model, batch size and sequence length.
     https://huggingface.co/models

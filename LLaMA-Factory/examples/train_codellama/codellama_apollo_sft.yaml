@@ -7,7 +7,7 @@ stage: sft
 do_train: true
 finetuning_type: full
 use_apollo: true
-apollo_layerwise: true  # choices: [true, false], use false for DDP training
+apollo_layerwise: true # choices: [true, false], use false for DDP training
 apollo_target: all
 apollo_rank: 128
 apollo_scale: 32.0
@@ -29,18 +29,18 @@ save_steps: 10000
 plot_loss: true
 overwrite_output_dir: true
 save_only_model: false
-report_to: none  # choices: [none, wandb, tensorboard, swanlab, mlflow]
+report_to: none # choices: [none, wandb, tensorboard, swanlab, mlflow]
 
 ### train
 per_device_train_batch_size: 8
-gradient_accumulation_steps: 1  # use 1 for layerwise apollo
+gradient_accumulation_steps: 1 # use 1 for layerwise apollo
 learning_rate: 1.0e-5
 num_train_epochs: 3.0
 lr_scheduler_type: cosine
 warmup_ratio: 0.002
 pure_bf16: true
 ddp_timeout: 180000000
-resume_from_checkpoint: /home/hyunwooo/workspace-rajat/MELA/LLaMA-Factory/saves/codellama-7b/apollo/sft/checkpoint-22000
+resume_from_checkpoint: #your checkpoint here
 ### eval
 # val_size: 0.1
 # per_device_eval_batch_size: 1
