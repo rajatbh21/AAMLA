@@ -3,7 +3,7 @@
 ## An Autonomous Memory-Efficient Parameterizable LLM-Aided Hardware Generation Framework
 
 <p align="center">
-  <img src="aamla.png" width="420"/>
+  <img src="assets/aamla.png" width="420"/>
 </p>
 
 [📄 **Paper**](https://www.techrxiv.org/users/948105/articles/1317868-aamla-an-autonomous-agentic-framework-for-memory-aware-llm-aided-hardware-generation)
