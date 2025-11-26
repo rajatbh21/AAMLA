@@ -1,25 +1,38 @@
 
-# AAMLA  
-## An Autonomous Memory-Efficient Parameterizable LLM-Aided Hardware Generation Framework
-
 <p align="center">
   <img src="assets/aamla.png" width="420"/>
 </p>
 
-[📄 **Paper**](https://www.techrxiv.org/users/948105/articles/1317868-aamla-an-autonomous-agentic-framework-for-memory-aware-llm-aided-hardware-generation)
 
-AAMLA is an **LLM‑driven, memory‑aware hardware generation framework** that combines:
+<div align="center"><h1>&nbsp;AAMLA: An Autonomous Agentic Framework for Memory-Aware LLM-Aided Hardware Generation</h1></div>
 
-- Parameter‑efficient tuning (MeZO, LoRA, LLMem++)  
-- LLM‑based RTL generation (RTL‑Coder, RocketPPA)  
-- Approximate arithmetic exploration (EvoApprox)  
-- Automated HW/SW co‑design loops  
 
----
 
-# Getting Started
+<p align="center">
+ <a href="https://www.techrxiv.org/doi/full/10.36227/techrxiv.175393689.97544984"><b>Preprint</b></a> 
+</p>
 
-## 1. Environment Setup
+## Contents
+- [News](#news)
+- [Introduction](#introduction)
+- [Working_with_AAMLA](#Working_with_AAMLA)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Citation](#citation)
+
+## News
+- [2025/07] AAMLA preprint is released.
+- [2025/10] AAMLA is accepted at VLSID 2026.
+
+## Introduction
+
+### AAMLA: An Autonomous Agentic Framework for Memory-Aware LLM-Aided Hardware Generation
+
+This repository accompanies the paper **“AAMLA: An Autonomous Agentic Framework for Memory-Aware LLM-Aided Hardware Generation,”** accepted at **VLSID 2026**. AAMLA is a novel framework that enables hardware designers to fine-tune LLMs on domain-specific hardware corpora while avoiding Out-of-Memory (OoM) failures on commodity GPUs. AAMLA supports a diverse suite of parameter- and memory-efficient fine-tuning techniques, automatically estimates memory requirements for a given model–dataset–method combination, and adaptively selects feasible configurations to ensure reliable, low-latency fine-tuning even under tight hardware budgets.
+
+## Working_with_AAMLA
+
+### 1. Environment Setup
 
 ```bash
 conda create -n aamla python=3.10
@@ -37,7 +50,7 @@ pip install -r requirements.txt
 
 ---
 
-## 2. pass@k Tools (Optional)
+### 2. pass@k Tools (Optional)
 
 ```bash
 sudo apt-get install -y jq bc
@@ -45,7 +58,7 @@ sudo apt-get install -y jq bc
 
 ---
 
-## 3. VCS Installation (for Verilog Testing)
+### 3. VCS Installation (for Verilog Testing)
 
 1. Obtain from Synopsys  
 2. Install + license  
