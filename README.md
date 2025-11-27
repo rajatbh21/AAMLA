@@ -146,7 +146,7 @@ MeZO (Memory-Zero) optimizer. Performs training without storing gradients, enabl
 
 **apollo + none**
 
-APOLLO optimizer. A parameter-free optimization method that reduces optimizer state memory while still enabling effective adaptation.
+APOLLO optimizer (SGD-like memory, AdamW-level performance) for full-model fine-tuning without adapters.
 
 Each configuration has an offline accuracy/time profile and an online memory estimate, allowing aamla.py to recommend only those strategies that fit within available GPU VRAM and match the user’s priority.
 
