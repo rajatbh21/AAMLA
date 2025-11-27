@@ -17,6 +17,7 @@
 - [Introduction](#introduction)
 - [Working_with_AAMLA](#Working_with_AAMLA)
 - [Usage](#usage)
+- [Description](#description)
 - [Dataset](#dataset)
 - [Citation](#citation)
 
