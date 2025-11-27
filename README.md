@@ -170,4 +170,5 @@ year={2025},
 month=jul }
 
 ```
-AAMLA is licensed under [MIT License](). For questions or issues, feel free to open an issue or contact the authors. Thank you for using AAMLA!
+
+AAMLA is licensed under [MIT License](https://github.com/rajatbh21/AAMLA/blob/main/LICENSE). For questions or issues, feel free to open an issue. Thank you for using AAMLA!
