@@ -154,7 +154,7 @@ Each configuration has an offline accuracy/time profile and an online memory est
 
 ## Dataset
 
-For dataset, we took the [HaVen-KL-Dataset](https://huggingface.co/datasets/yangyiyao/HaVen-KL-Dataset). However, the dataset is configurable, and AAMLA can be used with any hardware-oriented code dataset. AAMLA's capabilities extend beyond hardware generation for memory-efficient fine-tuning workflows.
+For dataset, we took the [HaVen-KL-Dataset](https://huggingface.co/datasets/yangyiyao/HaVen-KL-Dataset). However, the dataset is configurable, and AAMLA can be used with any hardware-oriented code dataset. AAMLA's capabilities extend beyond hardware generation for memory-efficient fine-tuning workflows, especially on commodity GPUs.
 
 ## Citation
 If you find AAMLA useful in your research, please cite:
