@@ -40,7 +40,7 @@ conda activate aamla
 pip install torch==2.6.0
 ```
 
-Clone repository:
+### Clone repository:
 
 ```bash
 git clone https://github.com/rajatbh21/AAMLA.git
@@ -60,18 +60,20 @@ sudo apt-get install -y jq bc
 
 ### 3. VCS Installation (for Verilog Testing)
 
-1. Obtain from Synopsys  
-2. Install + license  
-3. Add to PATH  
-4. Validate with:
+VCS is a Verilog compiler required for automated testing on benchmarks. Follow these steps to install and configure VCS:
+1. Obtain VCS from Synopsys. Ensure you have the required license to use it.
+2. Install VCS following the instructions provided in the official Synopsys documentation.
+3. Add the VCS executable to your system's PATH environment variable.
 
+
+Verify the installation by running:
 ```bash
-vcs -ID
+vcs -help
 ```
 
 ---
 
-# Usage
+## Usage
 
 Run AAMLA:
 
@@ -79,24 +81,16 @@ Run AAMLA:
 python aamla.py
 ```
 
-![merge](assets/merged.png)
-
 You will interactively select:
 
 - Model (HuggingFace)
 - Batch size / Sequence length
-- Memory‑efficient fine‑tuning scheme  
+- Memory‑efficient fine‑tuning scheme (you are welcome to add more) 
 - Priority: **Accuracy** or **Latency**  
 
-Training + hardware generation starts automatically.
-
+The job starts.
 ---
 
-# Features
+## Dataset
 
-- Memory‑efficient LLM FT (MeZO, LoRA, LLMem++)
-- Autonomous approximate computing search
-- RTL generation + functional verification
-- PPA estimation (area, power, delay)
-- pass@k scoring for code quality
-- End‑to‑end hardware design automation
+For dataset, we took the [HaVen-KL-Dataset](https://huggingface.co/datasets/yangyiyao/HaVen-KL-Dataset). But the dataset is configurable.
