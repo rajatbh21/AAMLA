@@ -163,14 +163,17 @@ For dataset, we took the [HaVen-KL-Dataset](https://huggingface.co/datasets/yang
 If you find AAMLA useful in your research, please cite:
 
 ```
- @article{Bhattacharjya_2025,
-title={AAMLA: An Autonomous Agentic Framework for Memory-Aware LLM-Aided Hardware Generation},
-url={http://dx.doi.org/10.36227/techrxiv.175393689.97544984/v1},
-DOI={10.36227/techrxiv.175393689.97544984/v1},
-publisher={Institute of Electrical and Electronics Engineers (IEEE)},
-author={Bhattacharjya, Rajat and Sung, Juhee and Jung, Hangyeol and Oh, Hyunwoo and Sarkar, Arnab and Imani, Mohsen and Dutt, Nikil},
-year={2025},
-month=jul }
+@INPROCEEDINGS{Bhattacharjya2026,
+  author={Bhattacharjya, Rajat and Sung, Juhee and Jung, Hangyeol and Oh, Hyunwoo and Sarkar, Arnab and Imani, Mohsen and Dutt, Nikil},
+  booktitle={2026 39th International Conference on VLSI Design & 25th International Conference on Embedded Systems (VLSID)}, 
+  title={AAMLA: An Autonomous Agentic Framework for Memory-Aware LLM-Aided Hardware Generation}, 
+  year={2026},
+  volume={},
+  number={},
+  pages={171-176},
+  keywords={Translation;Pain;Large language models;Graphics processing units;Organizations;Hardware;Space exploration;Hardware design languages;Tuning;Portfolios;Large Language Model;GPU Memory;Autonomous Agent;Hardware Generation Framework;Memory-Aware;Design Space Exploration},
+  doi={10.1109/VLSID68508.2026.00044}}
+
 
 ```
 
