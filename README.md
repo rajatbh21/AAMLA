@@ -9,7 +9,10 @@
 
 
 <p align="center">
- <a href="https://www.techrxiv.org/doi/full/10.36227/techrxiv.175393689.97544984"><b>Preprint</b></a> 
+ <a href="https://www.techrxiv.org/doi/full/10.36227/techrxiv.175393689.97544984"><b>Preprint</b></a>
+</p>
+<p align="center">
+  <a href="https://ieeexplore.ieee.org/abstract/document/11433341"><b>Published Version</b></a>
 </p>
 
 ## Contents
